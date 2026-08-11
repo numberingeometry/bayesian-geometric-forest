@@ -39,10 +39,15 @@ jobs:
 
       - name: Generate Figures and Interactive HTML Visualizers
         run: |
+          python examples/00_literature_taxonomy.py
           python examples/01_synthetic_benchmarks.py
           python examples/02_scrna_clustering.py
           python examples/03_mcmc_diagnostics.py
           python examples/04_interactive_viz.py
+          python examples/05_bayesian_spanning_tree.py
+          python examples/06_distance_clustering.py
+          python examples/07_semi_supervised_bsf.py
+          python examples/08_central_visualizer.py
 
       - name: Build MkDocs Documentation Site
         run: |
