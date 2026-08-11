@@ -1,7 +1,8 @@
+# ruff: noqa: I001
 """
 Bayesian Geometric Forest (`bgforest`)
 ======================================
-A high-performance Python package for Bayesian Spanning Forests, Forest Processes, 
+A high-performance Python package for Bayesian Spanning Forests, Forest Processes,
 Bayesian Spanning Trees, Bayesian Distance Clustering, and Exact Tree Samplers.
 """
 

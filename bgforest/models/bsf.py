@@ -1,18 +1,25 @@
 """
 Bayesian Spanning Forest Scikit-Learn Estimator
 ==============================================
-Provides the `BayesianSpanningForest` estimator class conforming to 
+Provides the `BayesianSpanningForest` estimator class conforming to
 Scikit-Learn cluster API standards for robust graphical model-based clustering.
 """
 
-from typing import Optional, Union, Tuple, List
+from typing import Optional
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from bgforest.core.graph import build_rbf_similarity, build_knn_similarity
-from bgforest.models.forest_process import ForestProcess
+from sklearn.utils.validation import check_array, check_is_fitted
+
+from bgforest.core.graph import (
+    build_knn_similarity,
+    build_rbf_similarity,
+    connect_knn_components,
+)
 from bgforest.mcmc.sampler import BSFMCMCSampler
+from bgforest.models.forest_process import ForestProcess
 
 
 class BayesianSpanningForest(BaseEstimator, ClusterMixin):
@@ -22,7 +29,7 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
     Parameters
     ----------
     n_clusters : int, optional
-        Target number of clusters for final partition extraction. 
+        Target number of clusters for final partition extraction.
         If None, automatically inferred from posterior model mode.
     graph_type : str, default='knn'
         Graph similarity matrix builder ('rbf' or 'knn').
@@ -85,7 +92,8 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         thinning: int = 1,
         sigma_likelihood: Optional[float] = None,
         scale_features: bool = True,
-        random_state: Optional[int] = None
+        ensure_connected: bool = True,
+        random_state: Optional[int] = None,
     ):
         self.n_clusters = n_clusters
         self.graph_type = graph_type
@@ -101,13 +109,28 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         self.thinning = thinning
         self.sigma_likelihood = sigma_likelihood
         self.scale_features = scale_features
+        self.ensure_connected = ensure_connected
         self.random_state = random_state
+
+    @staticmethod
+    def _infer_n_clusters(W: np.ndarray) -> int:
+        """Choose K with a transparent normalized-Laplacian eigengap heuristic."""
+        n = W.shape[0]
+        if n <= 2:
+            return 1
+        degree = np.sum(W, axis=1)
+        inv_sqrt = np.divide(1.0, np.sqrt(degree), out=np.zeros_like(degree), where=degree > 0)
+        L = np.eye(n) - (inv_sqrt[:, None] * W * inv_sqrt[None, :])
+        eigenvalues = np.linalg.eigvalsh(L)
+        max_k = min(8, n - 1)
+        gaps = np.diff(eigenvalues[: max_k + 1])
+        return int(np.argmax(gaps) + 1)
 
     def fit(
         self,
         X: np.ndarray,
         y: Optional[np.ndarray] = None,
-        initial_partition: Optional[np.ndarray] = None
+        initial_partition: Optional[np.ndarray] = None,
     ) -> "BayesianSpanningForest":
         """
         Fit Bayesian Spanning Forest model to input dataset X.
@@ -125,26 +148,36 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         self : BayesianSpanningForest
             Fitted estimator instance.
         """
-        X_raw = np.asarray(X, dtype=np.float64)
+        X_raw = check_array(X, ensure_min_samples=1, ensure_min_features=1, dtype=np.float64)
         n_samples = X_raw.shape[0]
+        if self.n_clusters is not None and not 1 <= self.n_clusters <= n_samples:
+            raise ValueError("n_clusters must be between 1 and n_samples.")
+        if self.graph_type not in {"rbf", "knn"}:
+            raise ValueError("graph_type must be either 'rbf' or 'knn'.")
 
         if self.scale_features:
-            scaler = StandardScaler()
-            X_proc = scaler.fit_transform(X_raw)
+            self.scaler_ = StandardScaler()
+            X_proc = self.scaler_.fit_transform(X_raw)
         else:
             X_proc = X_raw
 
         # 1. Build Similarity Graph Adjacency W
         if self.graph_type == "rbf":
             W = build_rbf_similarity(
-                X_proc, gamma=self.gamma, sigma=self.sigma,
-                adaptive_bandwidth=self.adaptive_bandwidth
+                X_proc,
+                gamma=self.gamma,
+                sigma=self.sigma,
+                adaptive_bandwidth=self.adaptive_bandwidth,
             )
         else:
             W = build_knn_similarity(
                 X_proc, n_neighbors=self.n_neighbors, mode="distance", symmetric=True
             )
+            if self.ensure_connected:
+                W = connect_knn_components(W, X_proc)
         self.W_ = W
+
+        target_k = self.n_clusters if self.n_clusters is not None else self._infer_n_clusters(W)
 
         # 2. Configure Forest Process Prior & MCMC Sampler
         fp = ForestProcess(alpha=self.alpha, beta=self.beta, theta=self.theta)
@@ -154,30 +187,37 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
             burn_in=self.burn_in,
             thinning=self.thinning,
             sigma_likelihood=self.sigma_likelihood,
-            random_state=self.random_state
+            random_state=self.random_state,
         )
 
         # Initialize partition if not explicitly supplied
         if initial_partition is not None:
             initial_part = np.asarray(initial_partition, dtype=np.int64)
-        elif self.n_clusters is not None and self.n_clusters > 1:
+        elif target_k > 1:
             from sklearn.cluster import SpectralClustering
+
             try:
                 sc = SpectralClustering(
-                    n_clusters=self.n_clusters, affinity="precomputed",
-                    random_state=self.random_state
+                    n_clusters=target_k,
+                    affinity="precomputed",
+                    n_init=10,
+                    random_state=self.random_state,
                 )
                 initial_part = sc.fit_predict(W)
             except Exception:
-                initial_part = np.random.randint(0, self.n_clusters, size=n_samples)
+                initial_part = (
+                    np.random.RandomState(self.random_state).permutation(np.arange(n_samples))
+                    % target_k
+                )
         else:
-            initial_part = None
+            initial_part = np.zeros(n_samples, dtype=np.int64)
 
         # 3. Run MCMC Sampling
-        posterior_samples = sampler.sample(
-            X_proc, W,
+        sampler.sample(
+            X_proc,
+            W,
             initial_partition=initial_part,
-            target_n_clusters=self.n_clusters
+            target_n_clusters=target_k,
         )
         self.log_posterior_trace_ = sampler.traces_
         self.acceptance_rate_ = sampler.acceptance_rate_
@@ -192,12 +232,7 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
 
-        if self.n_clusters is not None:
-            k = self.n_clusters
-        else:
-            gaps = np.diff(eigenvalues[:min(10, n_samples - 1)])
-            k = int(np.argmin(gaps) + 1)
-            k = max(1, k)
+        k = target_k
 
         self.n_clusters_inferred_ = k
         self.spectral_eigenvalues_ = eigenvalues[:k]
@@ -220,8 +255,11 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         """
         Return soft cluster membership probabilities derived from posterior co-clustering.
         """
-        if not hasattr(self, "labels_"):
-            raise RuntimeError("Estimator is not fitted yet. Call `fit` first.")
+        check_is_fitted(self, ["labels_", "co_clustering_matrix_"])
+        if X is not None:
+            X = check_array(X, dtype=np.float64)
+            if X.shape[0] != len(self.labels_):
+                raise ValueError("predict_proba currently supports the fitted observations only.")
 
         n_samples = len(self.labels_)
         k = self.n_clusters_inferred_

@@ -4,6 +4,7 @@ Unit Tests for Forest Process Prior
 
 import numpy as np
 import pytest
+
 from bgforest.core.graph import build_rbf_similarity
 from bgforest.models.forest_process import ForestProcess
 

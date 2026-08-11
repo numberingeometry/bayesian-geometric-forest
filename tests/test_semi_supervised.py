@@ -3,8 +3,9 @@ Unit tests for Constrained Bayesian Spanning Forest estimator.
 """
 
 import numpy as np
-from bgforest.models.semi_supervised import ConstrainedBayesianSpanningForest
+
 from bgforest.datasets.synthetic import make_two_moons
+from bgforest.models.semi_supervised import ConstrainedBayesianSpanningForest
 
 
 def test_constrained_bsf_estimator():
@@ -19,7 +20,7 @@ def test_constrained_bsf_estimator():
         n_clusters=2,
         n_iter=50,
         burn_in=10,
-        random_state=42
+        random_state=42,
     )
     labels = cbsf.fit_predict(X)
 

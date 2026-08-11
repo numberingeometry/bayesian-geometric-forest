@@ -6,10 +6,11 @@ algebra required for Bayesian Spanning Forest graph partitioning.
 """
 
 from typing import Optional, Tuple, Union
+
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import csr_matrix, issparse
+from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
+from scipy.spatial.distance import pdist, squareform
 
 
 def compute_pairwise_distances(X: np.ndarray) -> np.ndarray:
@@ -27,7 +28,11 @@ def compute_pairwise_distances(X: np.ndarray) -> np.ndarray:
         Symmetric matrix of pairwise Euclidean distances.
     """
     X = np.asarray(X, dtype=np.float64)
-    return squareform(pdist(X, metric='euclidean'))
+    if X.ndim != 2 or X.shape[0] == 0:
+        raise ValueError("X must be a non-empty 2-dimensional array.")
+    if not np.all(np.isfinite(X)):
+        raise ValueError("X must contain only finite values.")
+    return squareform(pdist(X, metric="euclidean"))
 
 
 def build_rbf_similarity(
@@ -35,7 +40,7 @@ def build_rbf_similarity(
     gamma: Optional[float] = None,
     sigma: Optional[float] = None,
     adaptive_bandwidth: bool = False,
-    k_adaptive: int = 7
+    k_adaptive: int = 7,
 ) -> np.ndarray:
     """
     Construct Gaussian Radial Basis Function (RBF) similarity matrix.
@@ -60,6 +65,13 @@ def build_rbf_similarity(
     W : np.ndarray of shape (n_samples, n_samples)
         Symmetric similarity matrix with zeros on diagonal.
     """
+    if gamma is not None and gamma <= 0:
+        raise ValueError("gamma must be strictly positive when provided.")
+    if sigma is not None and sigma <= 0:
+        raise ValueError("sigma must be strictly positive when provided.")
+    if k_adaptive < 1:
+        raise ValueError("k_adaptive must be at least 1.")
+
     D = compute_pairwise_distances(X)
     n = D.shape[0]
 
@@ -69,21 +81,21 @@ def build_rbf_similarity(
         k_idx = min(k_adaptive, n - 1)
         sigmas = sorted_D[:, k_idx]
         sigmas = np.maximum(sigmas, 1e-8)  # prevent division by zero
-        
+
         # Outer product of local bandwidths: sigma_i * sigma_j
         sigma_matrix = np.outer(sigmas, sigmas)
-        W = np.exp(-(D ** 2) / (2.0 * sigma_matrix))
+        W = np.exp(-(D**2) / (2.0 * sigma_matrix))
     else:
         if gamma is not None:
             bandwidth_sq = 1.0 / (2.0 * gamma)
         elif sigma is not None:
-            bandwidth_sq = sigma ** 2
+            bandwidth_sq = sigma**2
         else:
             # Default heuristic: median pairwise distance squared
             median_dist = np.median(D)
-            bandwidth_sq = (median_dist ** 2) if median_dist > 0 else 1.0
+            bandwidth_sq = (median_dist**2) if median_dist > 0 else 1.0
 
-        W = np.exp(-(D ** 2) / (2.0 * bandwidth_sq))
+        W = np.exp(-(D**2) / (2.0 * bandwidth_sq))
 
     np.fill_diagonal(W, 0.0)
     return W
@@ -94,7 +106,7 @@ def build_knn_similarity(
     n_neighbors: int = 10,
     metric: str = "euclidean",
     mode: str = "distance",
-    symmetric: bool = True
+    symmetric: bool = True,
 ) -> np.ndarray:
     """
     Construct k-Nearest Neighbors similarity graph.
@@ -119,7 +131,19 @@ def build_knn_similarity(
     """
     from sklearn.neighbors import NearestNeighbors
 
+    X = np.asarray(X, dtype=np.float64)
+    if X.ndim != 2 or X.shape[0] == 0:
+        raise ValueError("X must be a non-empty 2-dimensional array.")
+    if not np.all(np.isfinite(X)):
+        raise ValueError("X must contain only finite values.")
+    if n_neighbors < 1:
+        raise ValueError("n_neighbors must be at least 1.")
+    if mode not in {"distance", "connectivity"}:
+        raise ValueError("mode must be either 'distance' or 'connectivity'.")
+
     n = X.shape[0]
+    if n == 1:
+        return np.zeros((1, 1), dtype=np.float64)
     k = min(n_neighbors + 1, n)
     nn = NearestNeighbors(n_neighbors=k, metric=metric).fit(X)
     distances, indices = nn.kneighbors(X)
@@ -130,7 +154,7 @@ def build_knn_similarity(
         # Estimate sigma from median neighbor distance
         sigma = np.median(distances[:, 1:])
         sigma = max(sigma, 1e-6)
-        weights = np.exp(-(distances ** 2) / (2.0 * sigma ** 2))
+        weights = np.exp(-(distances**2) / (2.0 * sigma**2))
     else:
         weights = np.ones_like(distances)
 
@@ -148,9 +172,7 @@ def build_knn_similarity(
 
 
 def compute_laplacian(
-    W: np.ndarray,
-    normed: bool = False,
-    return_degree: bool = False
+    W: np.ndarray, normed: bool = False, return_degree: bool = False
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
     """
     Compute graph Laplacian matrix L from weighted adjacency W.
@@ -174,8 +196,9 @@ def compute_laplacian(
     d : np.ndarray of shape (n_samples,), optional
         Node degrees.
     """
+    W = validate_similarity_matrix(W)
     d = np.sum(W, axis=1)
-    
+
     if normed:
         d_inv_sqrt = np.power(np.maximum(d, 1e-12), -0.5)
         d_inv_sqrt[d == 0] = 0.0
@@ -189,10 +212,7 @@ def compute_laplacian(
     return L
 
 
-def extract_cluster_submatrix(
-    matrix: np.ndarray,
-    indices: np.ndarray
-) -> np.ndarray:
+def extract_cluster_submatrix(matrix: np.ndarray, indices: np.ndarray) -> np.ndarray:
     """
     Extract principal submatrix corresponding to nodes in a specific cluster.
 
@@ -209,4 +229,72 @@ def extract_cluster_submatrix(
         Extracted submatrix.
     """
     indices = np.asarray(indices, dtype=np.int64)
+    if indices.ndim != 1:
+        raise ValueError("indices must be one-dimensional.")
+    if np.any(indices < 0) or np.any(indices >= matrix.shape[0]):
+        raise IndexError("indices contain an out-of-range node index.")
     return matrix[np.ix_(indices, indices)]
+
+
+def validate_similarity_matrix(W: np.ndarray, *, require_connected: bool = False) -> np.ndarray:
+    """Validate and return a symmetric, non-negative weighted adjacency matrix."""
+    W = np.asarray(W, dtype=np.float64)
+    if W.ndim != 2 or W.shape[0] != W.shape[1]:
+        raise ValueError("W must be a square two-dimensional matrix.")
+    if W.shape[0] == 0:
+        raise ValueError("W must contain at least one node.")
+    if not np.all(np.isfinite(W)):
+        raise ValueError("W must contain only finite values.")
+    if np.any(W < 0):
+        raise ValueError("W must be non-negative.")
+    if not np.allclose(W, W.T, rtol=1e-10, atol=1e-12):
+        raise ValueError("W must be symmetric.")
+    if not np.allclose(np.diag(W), 0.0, atol=1e-12):
+        raise ValueError("W must have a zero diagonal.")
+    if require_connected and W.shape[0] > 1:
+        n_components, _ = connected_components(csr_matrix(W > 0), directed=False)
+        if n_components != 1:
+            raise ValueError("W must be connected for spanning-tree sampling.")
+    return W
+
+
+def connect_knn_components(W: np.ndarray, X: np.ndarray) -> np.ndarray:
+    """Connect a sparse similarity graph with its closest cross-component edges.
+
+    The function preserves all existing weights and only adds the minimum number
+    of edges needed for a connected graph.  It is intended for k-NN graphs used
+    by algorithms that require a connected support graph.
+    """
+    W = validate_similarity_matrix(W)
+    X = np.asarray(X, dtype=np.float64)
+    if X.ndim != 2 or X.shape[0] != W.shape[0]:
+        raise ValueError("X must be a 2D array with one row per node in W.")
+    if W.shape[0] <= 1:
+        return W.copy()
+
+    repaired = W.copy()
+    n_components, labels = connected_components(csr_matrix(repaired > 0), directed=False)
+    if n_components == 1:
+        return repaired
+
+    distances = compute_pairwise_distances(X)
+    positive_weights = repaired[repaired > 0]
+    bridge_weight = float(np.min(positive_weights)) if positive_weights.size else 1.0
+
+    # Repeatedly join the two components with the closest pair of observations.
+    while n_components > 1:
+        best = None
+        for left in range(n_components):
+            left_nodes = np.where(labels == left)[0]
+            for right in range(left + 1, n_components):
+                right_nodes = np.where(labels == right)[0]
+                local = distances[np.ix_(left_nodes, right_nodes)]
+                idx = np.unravel_index(np.argmin(local), local.shape)
+                candidate = (local[idx], left_nodes[idx[0]], right_nodes[idx[1]])
+                if best is None or candidate[0] < best[0]:
+                    best = candidate
+        _, i, j = best
+        repaired[i, j] = bridge_weight
+        repaired[j, i] = bridge_weight
+        n_components, labels = connected_components(csr_matrix(repaired > 0), directed=False)
+    return repaired

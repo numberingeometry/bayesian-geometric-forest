@@ -3,15 +3,15 @@ Unit Tests for Synthetic and Single-Cell Dataset Generators
 """
 
 import numpy as np
-import pytest
+
+from bgforest.datasets.single_cell import preprocess_scrna_data, simulate_scrna_data
 from bgforest.datasets.synthetic import (
-    make_two_moons,
-    make_concentric_circles,
-    make_spirals,
     make_anisotropic_blobs,
+    make_concentric_circles,
     make_misspecified_mixtures,
+    make_spirals,
+    make_two_moons,
 )
-from bgforest.datasets.single_cell import simulate_scrna_data, preprocess_scrna_data
 
 
 def test_synthetic_dataset_generators():
@@ -44,8 +44,6 @@ def test_scrna_simulation_and_preprocessing():
     assert len(labels) == 60
     assert len(names) == 3
 
-    pca_emb, hvg, pca_model = preprocess_scrna_data(
-        counts, n_hvg=50, n_pcs=10, random_state=42
-    )
+    pca_emb, hvg, pca_model = preprocess_scrna_data(counts, n_hvg=50, n_pcs=10, random_state=42)
     assert pca_emb.shape == (60, 10)
     assert hvg.shape == (60, 50)

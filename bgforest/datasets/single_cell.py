@@ -1,12 +1,13 @@
 """
 Single-Cell RNA Sequencing (scRNA-seq) Expression Simulator & Preprocessor
 ===========================================================================
-Simulates realistic single-cell gene expression count matrices, provides standard 
-bioinformatics preprocessing (CPM log-normalization, HVG selection, PCA dimension 
+Simulates realistic single-cell gene expression count matrices, provides standard
+bioinformatics preprocessing (CPM log-normalization, HVG selection, PCA dimension
 reduction, UMAP embedding), and supports AnnData / 10x Genomics PBMC 3k datasets.
 """
 
-from typing import Tuple, Dict, Any, Optional, List
+from typing import List, Optional, Tuple
+
 import numpy as np
 from sklearn.decomposition import PCA
 
@@ -17,7 +18,7 @@ def simulate_scrna_data(
     n_cell_types: int = 4,
     cell_type_names: Optional[List[str]] = None,
     dropout_rate: float = 0.2,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """
     Simulate realistic single-cell RNA-seq count matrix with distinct cell types.
@@ -86,12 +87,10 @@ def simulate_scrna_data(
 
 
 def load_real_scrna_benchmark(
-    n_cells: int = 500,
-    n_genes: int = 600,
-    random_state: Optional[int] = None
+    n_cells: int = 500, n_genes: int = 600, random_state: Optional[int] = None
 ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """
-    Load realistic benchmark dataset modeling PBMC 3k cell types (CD4 T cells, 
+    Load realistic benchmark dataset modeling PBMC 3k cell types (CD4 T cells,
     CD14+ Monocytes, B cells, FCGR3A+ Monocytes, NK cells, CD8 T cells, Dendritic).
 
     Parameters
@@ -113,8 +112,12 @@ def load_real_scrna_benchmark(
         Biological cell-type names.
     """
     pbmc_names = [
-        "CD4+ T-Cell", "CD14+ Monocyte", "B-Cell",
-        "CD8+ T-Cell", "NK-Cell", "FCGR3A+ Monocyte"
+        "CD4+ T-Cell",
+        "CD14+ Monocyte",
+        "B-Cell",
+        "CD8+ T-Cell",
+        "NK-Cell",
+        "FCGR3A+ Monocyte",
     ]
     return simulate_scrna_data(
         n_cells=n_cells,
@@ -122,7 +125,7 @@ def load_real_scrna_benchmark(
         n_cell_types=len(pbmc_names),
         cell_type_names=pbmc_names,
         dropout_rate=0.25,
-        random_state=random_state
+        random_state=random_state,
     )
 
 
@@ -131,7 +134,7 @@ def preprocess_scrna_data(
     n_hvg: int = 200,
     n_pcs: int = 15,
     target_sum: float = 1e4,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
 ) -> Tuple[np.ndarray, np.ndarray, PCA]:
     """
     Standard single-cell RNA-seq preprocessing pipeline:
@@ -170,7 +173,7 @@ def preprocess_scrna_data(
 
     gene_means = np.mean(norm_data, axis=0)
     gene_vars = np.var(norm_data, axis=0)
-    
+
     dispersion = np.zeros_like(gene_vars)
     non_zero = gene_means > 0
     dispersion[non_zero] = gene_vars[non_zero] / gene_means[non_zero]

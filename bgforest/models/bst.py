@@ -2,14 +2,15 @@
 Bayesian Spanning Tree (BST) for Feature Dependence Network Backbone Estimation
 =================================================================================
 Implements Bayesian Spanning Tree graph estimation (Duan & Dunson, 2024, JMLR)
-for discovering the primary backbone structure of high-dimensional variable 
+for discovering the primary backbone structure of high-dimensional variable
 dependence graphs without full precision matrix inversion.
 """
 
-from typing import List, Tuple, Dict, Any, Optional, Union
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree
-from bgforest.core.matrix_tree import compute_forest_log_spanning_trees
+
 from bgforest.samplers.wilson import WilsonLERWSampler
 
 
@@ -31,7 +32,7 @@ class BayesianSpanningTree:
         self,
         sigma_scale: float = 1.0,
         n_samples_tree: int = 100,
-        random_state: Optional[Union[int, np.random.RandomState]] = None
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
     ):
         self.sigma_scale = float(sigma_scale)
         self.n_samples_tree = int(n_samples_tree)
@@ -42,10 +43,10 @@ class BayesianSpanningTree:
         else:
             self.rng = np.random.RandomState(random_state)
 
-        self.W_feature_ : Optional[np.ndarray] = None
-        self.mst_edges_ : List[Tuple[int, int]] = []
-        self.backbone_adjacency_ : Optional[np.ndarray] = None
-        self.posterior_edge_probabilities_ : Optional[np.ndarray] = None
+        self.W_feature_: Optional[np.ndarray] = None
+        self.mst_edges_: List[Tuple[int, int]] = []
+        self.backbone_adjacency_: Optional[np.ndarray] = None
+        self.posterior_edge_probabilities_: Optional[np.ndarray] = None
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> "BayesianSpanningTree":
         """
@@ -69,11 +70,11 @@ class BayesianSpanningTree:
         # 1. Compute Pairwise Feature Distance / Dissimilarity S_uv
         # Standardize features
         X_std = (X - np.mean(X, axis=0)) / np.maximum(1e-8, np.std(X, axis=0))
-        
+
         # Pairwise distance between features: S_uv = ||X_u - X_v||^2 / n
         cov_matrix = np.corrcoef(X_std, rowvar=False)
         cov_matrix = np.nan_to_num(cov_matrix, nan=0.0)
-        
+
         # Dissimilarity: d(u, v)^2 = 2 * (1 - corr(u, v))
         D_feat = np.maximum(0.0, 2.0 * (1.0 - cov_matrix))
         np.fill_diagonal(D_feat, 0.0)
@@ -81,8 +82,8 @@ class BayesianSpanningTree:
         # 2. Build Feature Weight Matrix W
         sigma_sq = self.sigma_scale * (np.median(D_feat[D_feat > 0]) if np.any(D_feat > 0) else 1.0)
         sigma_sq = max(1e-4, sigma_sq)
-        
-        W = np.exp(- D_feat / (2.0 * sigma_sq))
+
+        W = np.exp(-D_feat / (2.0 * sigma_sq))
         np.fill_diagonal(W, 0.0)
         self.W_feature_ = W
 
@@ -90,7 +91,7 @@ class BayesianSpanningTree:
         # Scipy minimum_spanning_tree minimizes cost -> use -W or D_feat as cost
         mst_sparse = minimum_spanning_tree(D_feat)
         mst_dense = mst_sparse.toarray()
-        
+
         edges = []
         backbone_adj = np.zeros((p, p), dtype=np.float64)
         for u in range(p):

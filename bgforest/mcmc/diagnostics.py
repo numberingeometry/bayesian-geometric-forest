@@ -1,11 +1,12 @@
 """
 MCMC Convergence and Diagnostic Metrics
 =======================================
-Implements Gelman-Rubin R-hat, Effective Sample Size (ESS), 
+Implements Gelman-Rubin R-hat, Effective Sample Size (ESS),
 and trace plot statistics for evaluating MCMC chain convergence.
 """
 
 from typing import List, Union
+
 import numpy as np
 
 
@@ -84,7 +85,7 @@ def compute_effective_sample_size(trace: Union[List[float], np.ndarray]) -> floa
     n = 1 << (2 * N - 1).bit_length()
     fft = np.fft.fft(centered, n=n)
     autocorr = np.fft.ifft(fft * np.conj(fft)).real[:N]
-    autocorr /= (var * N)
+    autocorr /= var * N
 
     # Sum autocorrelations until first negative lag pair
     sum_autocorr = 0.0

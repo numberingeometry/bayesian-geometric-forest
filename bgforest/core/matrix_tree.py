@@ -1,16 +1,16 @@
 """
 Matrix Tree Theorem Log-Determinant Solvers
 ============================================
-Implements numerical procedures for computing spanning tree weight counts 
-tau(C_k, W) and partition functions using Cholesky and LU decomposition 
+Implements numerical procedures for computing spanning tree weight counts
+tau(C_k, W) and partition functions using Cholesky and LU decomposition
 log-determinants based on Kirchhoff's Matrix Tree Theorem.
 
 Includes fast BLAS/LAPACK acceleration for large graphs (n > 5000).
 """
 
-from typing import Union, Tuple, Optional
 import numpy as np
-from scipy.linalg import cholesky, lu, LinAlgError
+from scipy.linalg import LinAlgError, cholesky
+
 from bgforest.core.graph import compute_laplacian, extract_cluster_submatrix
 
 
@@ -24,14 +24,12 @@ def fast_cholesky_logdet(L_reduced: np.ndarray) -> float:
 
 
 def log_spanning_trees_count(
-    sub_laplacian: np.ndarray,
-    remove_index: int = 0,
-    jitter: float = 1e-12
+    sub_laplacian: np.ndarray, remove_index: int = 0, jitter: float = 1e-12
 ) -> float:
     """
-    Compute log of total weight sum of spanning trees for a graph component 
+    Compute log of total weight sum of spanning trees for a graph component
     using Kirchhoff's Matrix Tree Theorem:
-    
+
     ln tau(C_k, W) = ln det( L_{C_k, (uu)} )
 
     Parameters
@@ -86,10 +84,7 @@ def log_spanning_trees_count(
     return -np.inf
 
 
-def compute_cluster_log_spanning_trees(
-    W: np.ndarray,
-    cluster_indices: np.ndarray
-) -> float:
+def compute_cluster_log_spanning_trees(W: np.ndarray, cluster_indices: np.ndarray) -> float:
     """
     Compute log weight sum of spanning trees for a node cluster from global adjacency W.
     """
@@ -103,13 +98,10 @@ def compute_cluster_log_spanning_trees(
     return log_spanning_trees_count(L_sub)
 
 
-def compute_forest_log_spanning_trees(
-    W: np.ndarray,
-    partition: np.ndarray
-) -> float:
+def compute_forest_log_spanning_trees(W: np.ndarray, partition: np.ndarray) -> float:
     """
     Compute total log weight sum of spanning forest for a full data partition:
-    
+
     ln tau(C, W) = sum_{k=1}^K ln tau(C_k, W)
     """
     partition = np.asarray(partition, dtype=np.int64)
