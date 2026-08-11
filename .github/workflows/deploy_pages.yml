@@ -1,0 +1,56 @@
+name: Deploy Interactive Visualizer & GitHub Pages Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Package and Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest mkdocs mkdocs-material
+
+      - name: Run Test Suite
+        run: |
+          python -m pytest tests/
+
+      - name: Generate Figures and Interactive HTML Visualizers
+        run: |
+          python examples/01_synthetic_benchmarks.py
+          python examples/02_scrna_clustering.py
+          python examples/03_mcmc_diagnostics.py
+          python examples/04_interactive_viz.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifacts for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'figs/'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
