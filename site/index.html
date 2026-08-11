@@ -42,6 +42,8 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">Overview</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#central-interactive-web-dashboard">Central Interactive Web Dashboard</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#literature-taxonomy-theoretical-connections">Literature Taxonomy &amp; Theoretical Connections</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
@@ -50,6 +52,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#central-interactive-dashboard">Central Interactive Dashboard</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#literature-taxonomy-graph">Literature Taxonomy Graph</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#synthetic-non-linear-manifold-benchmarks">Synthetic Non-Linear Manifold Benchmarks</a>
@@ -65,8 +69,6 @@
     <li class="toctree-l3"><a class="reference internal" href="#posterior-co-clustering-probability-matrix">Posterior Co-Clustering Probability Matrix</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#multi-chain-mcmc-convergence-diagnostics">Multi-Chain MCMC Convergence Diagnostics</a>
-    </li>
-    <li class="toctree-l3"><a class="reference internal" href="#interactive-web-visualizers-plotly">Interactive Web Visualizers (Plotly)</a>
     </li>
         </ul>
     </li>
@@ -115,6 +117,12 @@
 3. <strong>"Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph"</strong> (Duan &amp; Dunson, 2024, <em>Journal of Machine Learning Research</em> / <a href="https://arxiv.org/abs/2012.11867">arXiv:2012.11867</a>)
 4. <strong>"Bayesian Distance Clustering"</strong> (Duan &amp; Dunson, 2021, <em>Journal of Machine Learning Research</em> / <a href="https://arxiv.org/abs/1806.07542">arXiv:1806.07542</a>)
 5. <strong>"Exact sampling of spanning trees via fast-forwarded random walks"</strong> (Tam, Dunson &amp; Duan, 2025, <em>Biometrika</em> / <a href="https://arxiv.org/abs/2305.10549">arXiv:2305.10549</a>)</p>
+<hr />
+<h2 id="central-interactive-web-dashboard">Central Interactive Web Dashboard</h2>
+<p>To explore all model visualizations, literature taxonomies, 3D/2D manifold embeddings, and distance matrices in a single unified interface:</p>
+<ul>
+<li><strong>Central Interactive Visualizer Dashboard</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/central_visualizer.html">Live GitHub Pages View</a></li>
+</ul>
 <hr />
 <h2 id="literature-taxonomy-theoretical-connections">Literature Taxonomy &amp; Theoretical Connections</h2>
 <p>The diagram below illustrates the mathematical and methodological connections across all 5 foundational literature papers in the Bayesian Geometric Forest framework:</p>
@@ -208,6 +216,10 @@
 </table>
 <hr />
 <h2 id="visualization">Visualization</h2>
+<h3 id="central-interactive-dashboard">Central Interactive Dashboard</h3>
+<ul>
+<li><strong>Central Dashboard</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/central_visualizer.html">Live GitHub Pages View</a></li>
+</ul>
 <h3 id="literature-taxonomy-graph">Literature Taxonomy Graph</h3>
 <p><img alt="Literature Taxonomy Graph" src="../figs/literature_taxonomy_graph.png" /></p>
 <h3 id="synthetic-non-linear-manifold-benchmarks">Synthetic Non-Linear Manifold Benchmarks</h3>
@@ -224,10 +236,6 @@
 <p><img alt="scRNA Co-Clustering Matrix" src="../figs/scrna_co_clustering_matrix.png" /></p>
 <h3 id="multi-chain-mcmc-convergence-diagnostics">Multi-Chain MCMC Convergence Diagnostics</h3>
 <p><img alt="MCMC Convergence Diagnostics" src="../figs/mcmc_multi_chain_diagnostics.png" /></p>
-<h3 id="interactive-web-visualizers-plotly">Interactive Web Visualizers (Plotly)</h3>
-<p>To view interactive 3D/2D Plotly visualizers directly in your browser:
-- <strong>Interactive Spanning Forest Graph</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_spanning_forest.html">Live GitHub Pages View</a>
-- <strong>Single-Cell RNA-Seq Bayesian Cell Uncertainty</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_scrna_uncertainty.html">Live GitHub Pages View</a></p>
 <hr />
 <h2 id="repository-structure">Repository Structure</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>bayesian-geometric-forest/
@@ -244,7 +252,7 @@
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>├── docs/                          # Documentation &amp; theoretical proofs breakdown
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│   ├── index.md                   # Site overview index
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│   └── theory.md                  # Complete mathematical proofs
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>├── examples/                      # Demo scripts &amp; benchmarks (00 through 07)
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>├── examples/                      # Demo scripts &amp; benchmarks (00 through 08)
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>├── figs/                          # Figures and HTML visualizer artifacts
 <a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>├── tests/                         # Complete pytest unit test suite (27 tests)
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>├── mkdocs.yml                     # MkDocs documentation site configuration
@@ -387,5 +395,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-08-11 19:43:40.115078+00:00
+Build Date UTC : 2026-08-11 19:51:14.692659+00:00
 -->
