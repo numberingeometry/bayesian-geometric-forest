@@ -4,28 +4,18 @@ site_author: Bobby Zhang
 repo_url: https://github.com/numberingeometry/bayesian-geometric-forest
 
 theme:
-  name: material
-  palette:
-    primary: indigo
-    accent: blue
+  name: readthedocs
 
 plugins:
   - search
 
 markdown_extensions:
-  - mathjax:
-      javascript_status: true
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tabbed:
-      alternate_style: true
 
 nav:
-  - Overview: README.md
-  - Execution Plan: PLAN.md
-  - Theory & Mathematics: docs/theory.md
+  - Overview: index.md
+  - Theory & Mathematics: theory.md
