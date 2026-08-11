@@ -1,9 +1,5 @@
 # Bayesian Geometric Forest (`bayesian-geometric-forest`)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 A high-performance Python library for **graphical model-based robust clustering** using **Bayesian Spanning Forests** and **Forest Processes**.
 
 This package implements the theories and algorithms introduced in:
@@ -12,9 +8,9 @@ This package implements the theories and algorithms introduced in:
 
 ---
 
-## 💡 Overview
+## Overview
 
-Traditional mixture models (e.g., Gaussian Mixture Models) rely on strong distributional assumptions and are vulnerable to model misspecification. Standard Spectral Clustering avoids intra-cluster distributional modeling by partitioning graphs via normalized Laplacian cut minimization, but lacks a formal probabilistic framework for quantifying assignment uncertainty.
+Traditional mixture models (such as Gaussian Mixture Models) rely on strong distributional assumptions and are vulnerable to model misspecification. Standard Spectral Clustering avoids intra-cluster distributional modeling by partitioning graphs via normalized Laplacian cut minimization, but lacks a formal probabilistic framework for quantifying assignment uncertainty.
 
 **Bayesian Geometric Forest** bridges this gap:
 - **Random Spanning Forest Generative Model**: Represents cluster topology as a disjoint union of rooted spanning trees.
@@ -25,19 +21,7 @@ Traditional mixture models (e.g., Gaussian Mixture Models) rely on strong distri
 
 ---
 
-## ⚙️ Installation
-
-Clone the repository and install locally:
-
-```bash
-git clone https://github.com/numberingeometry/bayesian-geometric-forest.git
-cd bayesian-geometric-forest
-pip install -e .
-```
-
----
-
-## 🚀 Quick Start
+## Quick Start
 
 ```python
 import numpy as np
@@ -71,7 +55,7 @@ print(f"Normalized Mutual Information (NMI): {metrics['NMI']:.4f}")
 
 ---
 
-## 📊 Benchmarks & Empirical Performance
+## Benchmarks & Empirical Performance
 
 | Dataset | K-Means (ARI) | Spectral Clustering (ARI) | **Bayesian Spanning Forest (ARI)** |
 | :--- | :---: | :---: | :---: |
@@ -82,41 +66,31 @@ print(f"Normalized Mutual Information (NMI): {metrics['NMI']:.4f}")
 
 ---
 
-## 🎨 Visualization & Diagnostics
+## Visualization
 
-### 1. Spanning Forest Topology & Co-Clustering Heatmap
-```python
-from bgforest.viz import plot_spanning_forest, plot_co_clustering_matrix
+### Synthetic Manifold Benchmarks
+![Synthetic Benchmark Results](synthetic_benchmark_results.png)
 
-# Plot 2D Spanning Trees
-fig_tree, ax_tree = plot_spanning_forest(X, labels, bsf.W_)
+### Single-Cell RNA-Seq Cell-Type Partitioning & Uncertainty
+![scRNA-Seq Clustering Results](scrna_clustering_results.png)
 
-# Plot Reordered Co-Clustering Matrix P_ij
-fig_p, ax_p = plot_co_clustering_matrix(bsf.co_clustering_matrix_, labels=labels)
-```
+### Posterior Co-Clustering Probability Matrix
+![scRNA Co-Clustering Matrix](scrna_co_clustering_matrix.png)
 
-### 2. Interactive Web Visualizers (Plotly)
-```python
-from bgforest.viz import create_interactive_forest_plot, create_interactive_scrna_visualizer
+### Multi-Chain MCMC Convergence Diagnostics
+![MCMC Convergence Diagnostics](mcmc_multi_chain_diagnostics.png)
 
-# Interactive HTML graph figure
-fig_plotly = create_interactive_forest_plot(X, labels, bsf.W_, proba)
-fig_plotly.write_html("interactive_forest.html")
-```
+### Interactive Web Visualizers (Plotly)
 
----
+To view interactive 3D/2D Plotly visualizers directly in the browser:
+- **Interactive Spanning Forest Graph**: [View Interactive HTML Plot](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_spanning_forest.html) (Local File: [`interactive_spanning_forest.html`](interactive_spanning_forest.html))
+- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [View Interactive HTML Plot](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_scrna_uncertainty.html) (Local File: [`interactive_scrna_uncertainty.html`](interactive_scrna_uncertainty.html))
 
-## 🧪 Running Tests
-
-Run the complete pytest test suite:
-
-```bash
-python -m pytest tests/ -v
-```
+*(Note: Enabling GitHub Pages under repository Settings -> Pages allows `.html` visualizer links to open live in any web browser.)*
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 bayesian-geometric-forest/
@@ -137,7 +111,7 @@ bayesian-geometric-forest/
 
 ---
 
-## 📜 Citation
+## Citation
 
 If you use `bayesian-geometric-forest` in your research, please cite the underlying papers:
 
@@ -156,9 +130,3 @@ If you use `bayesian-geometric-forest` in your research, please cite the underly
   year={2024}
 }
 ```
-
----
-
-## 👤 Author & Maintainer
-**Bobby Zhang** ([chelseaandmadrid@gmail.com](mailto:chelseaandmadrid@gmail.com))  
-GitHub: [numberingeometry](https://github.com/numberingeometry)

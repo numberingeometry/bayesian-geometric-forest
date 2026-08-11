@@ -1,6 +1,6 @@
 # Execution & Implementation Plan: `bayesian-geometric-forest`
 
-## 📌 Executive Overview
+## Executive Overview
 `bayesian-geometric-forest` is a high-performance, modular Python library implementing the theories introduced in:
 1. **"Spectral Clustering, Bayesian Spanning Forest, and Forest Process"** (Duan & Roy, 2022/2023, JASA / arXiv:2202.00493)
 2. **"Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest"** (Zheng, Duan & Roy, 2024, arXiv:2409.19129)
@@ -9,7 +9,7 @@ This package unifies **graph-based spectral methods** and **Bayesian nonparametr
 
 ---
 
-## 🎯 Primary Goals & Portfolio Objectives
+## Primary Goals & Portfolio Objectives
 - **Theoretical Fidelity**: Faithfully implement the Matrix Tree Theorem, Forest Process urn prior, marginalized likelihood, and MCMC split-merge/edge-swap samplers.
 - **Scikit-Learn Compatible API**: Provide `BayesianSpanningForest` with familiar `fit`, `predict`, `fit_predict`, and `predict_proba` methods.
 - **Visualization Focus**: Deliver interactive visual tools (graph spanning forest animations, co-clustering posterior heatmaps, spectral eigenvector spectrum analysis, single-cell RNA-seq cell-type uncertainty plots).
@@ -17,7 +17,7 @@ This package unifies **graph-based spectral methods** and **Bayesian nonparametr
 
 ---
 
-## 📐 Mathematical Formulation & Core Algorithms
+## Mathematical Formulation & Core Algorithms
 
 ### 1. Graph Construction & Adjacency
 Given data $X = \{x_1, \dots, x_n\} \subset \mathbb{R}^d$, construct a similarity graph $G = (V, E, W)$:
@@ -53,7 +53,7 @@ Given data $X = \{x_1, \dots, x_n\} \subset \mathbb{R}^d$, construct a similarit
 
 ---
 
-## 🏗️ Repository Architecture
+## Repository Architecture
 
 ```text
 bayesian-geometric-forest/
@@ -110,7 +110,7 @@ bayesian-geometric-forest/
 
 ---
 
-## 🚀 Implementation Phases & Milestones
+## Implementation Phases & Milestones
 
 ### Phase 1: Core Mathematical Engine & Graph Tools
 - Implement robust graph builder (`bgforest.core.graph`) for RBF kernels, k-NN, and Laplacian matrices.
@@ -143,7 +143,8 @@ bayesian-geometric-forest/
 
 ---
 
-## 🛡️ Commit & Quality Guidelines
+## Commit & Quality Guidelines
 - **Conventional Commits**: Format every commit as `feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`, `test: ...`, or `chore: ...`.
 - **Zero AI Signatures**: Do not append any `Co-authored-by: Antigravity` or AI metadata to git commits.
+- **No Emojis**: Maintain a strictly clean, professional technical document tone.
 - **Repository Scope**: All work kept strictly inside `C:\Users\15002\repos\bayesian-geometric-forest`.
