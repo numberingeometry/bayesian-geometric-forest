@@ -11,6 +11,14 @@ This package implements the theories and algorithms introduced in:
 
 ---
 
+## Central Interactive Web Dashboard
+
+To explore all model visualizations, literature taxonomies, 3D/2D manifold embeddings, and distance matrices in a single unified interface:
+
+- **Central Interactive Visualizer Dashboard**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/central_visualizer.html)
+
+---
+
 ## Literature Taxonomy & Theoretical Connections
 
 The diagram below illustrates the mathematical and methodological connections across all 5 foundational literature papers in the Bayesian Geometric Forest framework:
@@ -64,6 +72,9 @@ Traditional mixture models (such as Gaussian Mixture Models) rely on strong dist
 
 ## Visualization
 
+### Central Interactive Dashboard
+- **Central Dashboard**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/central_visualizer.html)
+
 ### Literature Taxonomy Graph
 ![Literature Taxonomy Graph](figs/literature_taxonomy_graph.png)
 
@@ -88,12 +99,6 @@ Traditional mixture models (such as Gaussian Mixture Models) rely on strong dist
 ### Multi-Chain MCMC Convergence Diagnostics
 ![MCMC Convergence Diagnostics](figs/mcmc_multi_chain_diagnostics.png)
 
-### Interactive Web Visualizers (Plotly)
-
-To view interactive 3D/2D Plotly visualizers directly in your browser:
-- **Interactive Spanning Forest Graph**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_spanning_forest.html)
-- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_scrna_uncertainty.html)
-
 ---
 
 ## Repository Structure
@@ -113,7 +118,7 @@ bayesian-geometric-forest/
 ├── docs/                          # Documentation & theoretical proofs breakdown
 │   ├── index.md                   # Site overview index
 │   └── theory.md                  # Complete mathematical proofs
-├── examples/                      # Demo scripts & benchmarks (00 through 07)
+├── examples/                      # Demo scripts & benchmarks (00 through 08)
 ├── figs/                          # Figures and HTML visualizer artifacts
 ├── tests/                         # Complete pytest unit test suite (27 tests)
 ├── mkdocs.yml                     # MkDocs documentation site configuration
