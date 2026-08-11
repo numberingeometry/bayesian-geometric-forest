@@ -35,22 +35,22 @@ Traditional mixture models (such as Gaussian Mixture Models) rely on strong dist
 ## Visualization
 
 ### Synthetic Manifold Benchmarks
-![Synthetic Benchmark Results](figs/synthetic_benchmark_results.png)
+![Synthetic Benchmark Results](../figs/synthetic_benchmark_results.png)
 
 ### Single-Cell RNA-Seq Cell-Type Partitioning & Uncertainty
-![scRNA-Seq Clustering Results](figs/scrna_clustering_results.png)
+![scRNA-Seq Clustering Results](../figs/scrna_clustering_results.png)
 
 ### Posterior Co-Clustering Probability Matrix
-![scRNA Co-Clustering Matrix](figs/scrna_co_clustering_matrix.png)
+![scRNA Co-Clustering Matrix](../figs/scrna_co_clustering_matrix.png)
 
 ### Multi-Chain MCMC Convergence Diagnostics
-![MCMC Convergence Diagnostics](figs/mcmc_multi_chain_diagnostics.png)
+![MCMC Convergence Diagnostics](../figs/mcmc_multi_chain_diagnostics.png)
 
 ### Interactive Web Visualizers (Plotly)
 
 To view interactive 3D/2D Plotly visualizers directly in your browser:
-- **Interactive Spanning Forest Graph**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_spanning_forest.html) (Repo File: [`figs/interactive_spanning_forest.html`](figs/interactive_spanning_forest.html))
-- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_scrna_uncertainty.html) (Repo File: [`figs/interactive_scrna_uncertainty.html`](figs/interactive_scrna_uncertainty.html))
+- **Interactive Spanning Forest Graph**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_spanning_forest.html)
+- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_scrna_uncertainty.html)
 
 ---
 
@@ -69,6 +69,7 @@ bayesian-geometric-forest/
 │   ├── metrics/                   # ARI, NMI, uncertainty entropy & theoretical bounds
 │   └── viz/                       # Matplotlib & Plotly interactive visualizers
 ├── docs/                          # Documentation & theoretical proofs breakdown
+│   ├── index.md                   # Site overview index
 │   └── theory.md                  # Complete mathematical proofs
 ├── examples/                      # Demo scripts & benchmarks
 ├── figs/                          # Figures and HTML visualizer artifacts
