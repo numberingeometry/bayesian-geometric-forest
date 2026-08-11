@@ -66,7 +66,7 @@ def main():
             axes[idx, j].set_yticks([])
 
     plt.tight_layout()
-    output_png = "synthetic_benchmark_results.png"
+    output_png = "figs/synthetic_benchmark_results.png"
     plt.savefig(output_png, dpi=200)
     print(f"\n[Success] Benchmark figure saved to {output_png}")
 

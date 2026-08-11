@@ -60,7 +60,7 @@ def main():
     ax.grid(True, linestyle="--", alpha=0.3)
     plt.tight_layout()
 
-    output_png = "mcmc_multi_chain_diagnostics.png"
+    output_png = "figs/mcmc_multi_chain_diagnostics.png"
     plt.savefig(output_png, dpi=200)
     print(f"\n[Success] Convergence diagnostic figure saved to {output_png}")
 

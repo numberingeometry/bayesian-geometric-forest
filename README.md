@@ -69,22 +69,22 @@ print(f"Normalized Mutual Information (NMI): {metrics['NMI']:.4f}")
 ## Visualization
 
 ### Synthetic Manifold Benchmarks
-![Synthetic Benchmark Results](synthetic_benchmark_results.png)
+![Synthetic Benchmark Results](figs/synthetic_benchmark_results.png)
 
 ### Single-Cell RNA-Seq Cell-Type Partitioning & Uncertainty
-![scRNA-Seq Clustering Results](scrna_clustering_results.png)
+![scRNA-Seq Clustering Results](figs/scrna_clustering_results.png)
 
 ### Posterior Co-Clustering Probability Matrix
-![scRNA Co-Clustering Matrix](scrna_co_clustering_matrix.png)
+![scRNA Co-Clustering Matrix](figs/scrna_co_clustering_matrix.png)
 
 ### Multi-Chain MCMC Convergence Diagnostics
-![MCMC Convergence Diagnostics](mcmc_multi_chain_diagnostics.png)
+![MCMC Convergence Diagnostics](figs/mcmc_multi_chain_diagnostics.png)
 
 ### Interactive Web Visualizers (Plotly)
 
-To view interactive 3D/2D Plotly visualizers directly in the browser:
-- **Interactive Spanning Forest Graph**: [View Interactive HTML Plot](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_spanning_forest.html) (Local File: [`interactive_spanning_forest.html`](interactive_spanning_forest.html))
-- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [View Interactive HTML Plot](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_scrna_uncertainty.html) (Local File: [`interactive_scrna_uncertainty.html`](interactive_scrna_uncertainty.html))
+To view interactive 3D/2D Plotly visualizers directly in your browser:
+- **Interactive Spanning Forest Graph**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_spanning_forest.html) (Repo File: [`figs/interactive_spanning_forest.html`](figs/interactive_spanning_forest.html))
+- **Single-Cell RNA-Seq Bayesian Cell Uncertainty**: [Live GitHub Pages View](https://numberingeometry.github.io/bayesian-geometric-forest/interactive_scrna_uncertainty.html) (Repo File: [`figs/interactive_scrna_uncertainty.html`](figs/interactive_scrna_uncertainty.html))
 
 *(Note: Enabling GitHub Pages under repository Settings -> Pages allows `.html` visualizer links to open live in any web browser.)*
 
@@ -94,6 +94,9 @@ To view interactive 3D/2D Plotly visualizers directly in the browser:
 
 ```text
 bayesian-geometric-forest/
+├── .github/
+│   └── workflows/
+│       └── deploy_pages.yml       # Automated GitHub Pages CI deployment
 ├── bgforest/                      # Package source
 │   ├── core/                      # Graph Laplacians & Matrix Tree solvers
 │   ├── models/                    # BayesianSpanningForest & ForestProcess
@@ -101,8 +104,12 @@ bayesian-geometric-forest/
 │   ├── datasets/                  # Synthetic benchmark & scRNA-seq expression simulator
 │   ├── metrics/                   # ARI, NMI, uncertainty entropy & theoretical bounds
 │   └── viz/                       # Matplotlib & Plotly interactive visualizers
+├── docs/                          # Documentation & theoretical proofs breakdown
+│   └── theory.md                  # Complete mathematical proofs
 ├── examples/                      # Demo scripts & benchmarks
+├── figs/                          # Figures and HTML visualizer artifacts
 ├── tests/                         # Complete pytest unit test suite
+├── mkdocs.yml                     # MkDocs documentation site configuration
 ├── PLAN.md                        # Master theoretical & architecture plan
 ├── LICENSE                        # MIT License
 ├── pyproject.toml                 # Package setup
