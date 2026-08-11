@@ -69,6 +69,3 @@ venv.bak/
 
 # Data / Output artifacts
 data/
-*.png
-*.svg
-*.html

@@ -29,7 +29,7 @@ def main():
         X_moons, bsf_moons.labels_, bsf_moons.W_, bsf_moons.predict_proba(),
         title="Interactive Bayesian Spanning Forest - Interleaved Two Moons"
     )
-    html_forest = "interactive_spanning_forest.html"
+    html_forest = "figs/interactive_spanning_forest.html"
     fig_forest.write_html(html_forest)
     print(f"[Success] Interactive forest plot saved to {html_forest}")
 
@@ -46,7 +46,7 @@ def main():
         pca_emb, bsf_scrna.labels_, cell_names, uncertainty_entropy=entropy,
         title="Single-Cell RNA-Seq Interactive Bayesian Cell-Type Uncertainty"
     )
-    html_scrna = "interactive_scrna_uncertainty.html"
+    html_scrna = "figs/interactive_scrna_uncertainty.html"
     fig_scrna.write_html(html_scrna)
     print(f"[Success] Interactive scRNA-seq plot saved to {html_scrna}")
 

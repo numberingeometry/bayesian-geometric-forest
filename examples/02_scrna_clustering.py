@@ -80,13 +80,13 @@ def main():
         ax.grid(True, linestyle="--", alpha=0.3)
 
     plt.tight_layout()
-    output_png = "scrna_clustering_results.png"
+    output_png = "figs/scrna_clustering_results.png"
     plt.savefig(output_png, dpi=200)
     print(f"\n[Success] scRNA-seq figure saved to {output_png}")
 
     # Plot co-clustering matrix
     fig_p, _ = plot_co_clustering_matrix(bsf.co_clustering_matrix_, labels=bsf_labels)
-    plt.savefig("scrna_co_clustering_matrix.png", dpi=200)
+    plt.savefig("figs/scrna_co_clustering_matrix.png", dpi=200)
 
 
 if __name__ == "__main__":
