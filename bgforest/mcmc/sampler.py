@@ -109,50 +109,56 @@ class BSFMCMCSampler:
             k_init = target_n_clusters if target_n_clusters is not None else 4
             from sklearn.cluster import SpectralClustering
             try:
-                sc = SpectralClustering(n_clusters=k_init, affinity="precomputed", random_state=self.rng.randint(0, 10000))
+                sc = SpectralClustering(
+                    n_clusters=k_init, affinity="precomputed",
+                    n_init=1, random_state=self.rng.randint(0, 10000)
+                )
                 current_partition = sc.fit_predict(W)
             except Exception:
-                current_partition = np.random.randint(0, k_init, size=n)
+                current_partition = self.rng.randint(0, k_init, size=n)
 
         current_log_post = self.compute_log_posterior(X, W, current_partition)
 
         self.traces_ = []
         self.samples_ = []
         n_accepted = 0
+        n_proposed_moves = 0
 
         for it in range(self.n_iter):
             if target_n_clusters is not None:
-                # If target clusters specified, use node boundary swaps preserving K
                 move_type = "relocate"
             else:
                 move_type = self.rng.choice(["relocate", "split", "merge"], p=[0.6, 0.2, 0.2])
 
-            proposed_partition = self._propose_move(current_partition, W, move_type, target_n_clusters=target_n_clusters)
+            proposed_partition = self._propose_move(current_partition, W, X, move_type, target_n_clusters=target_n_clusters)
 
-            if np.array_equal(proposed_partition, current_partition):
-                proposed_log_post = current_log_post
-            else:
+            if not np.array_equal(proposed_partition, current_partition):
+                n_proposed_moves += 1
                 proposed_log_post = self.compute_log_posterior(X, W, proposed_partition)
 
-            if not np.isneginf(proposed_log_post):
-                log_accept_ratio = proposed_log_post - current_log_post
-                if np.log(self.rng.uniform(0.0, 1.0)) < log_accept_ratio:
-                    current_partition = proposed_partition
-                    current_log_post = proposed_log_post
-                    n_accepted += 1
+                if not np.isneginf(proposed_log_post):
+                    log_accept_ratio = proposed_log_post - current_log_post
+                    half_burn = max(1, self.burn_in // 2)
+                    temp = 1.0 + 3.0 * np.exp(-it / float(half_burn))
+
+                    if np.log(self.rng.uniform(0.0, 1.0)) < (log_accept_ratio / temp):
+                        current_partition = proposed_partition
+                        current_log_post = proposed_log_post
+                        n_accepted += 1
 
             self.traces_.append(current_log_post)
 
             if it >= self.burn_in and (it - self.burn_in) % self.thinning == 0:
                 self.samples_.append(np.copy(current_partition))
 
-        self.acceptance_rate_ = n_accepted / float(self.n_iter)
+        self.acceptance_rate_ = n_accepted / float(max(1, n_proposed_moves))
         return self.samples_
 
     def _propose_move(
         self,
         partition: np.ndarray,
         W: np.ndarray,
+        X: np.ndarray,
         move_type: str,
         target_n_clusters: Optional[int] = None
     ) -> np.ndarray:
@@ -161,22 +167,39 @@ class BSFMCMCSampler:
         prop = np.copy(partition)
 
         if move_type == "relocate":
-            # Select random boundary node
-            node = self.rng.randint(0, n)
-            neighbors = np.where(W[node] > 0)[0]
-            if len(neighbors) > 0:
-                target_node = self.rng.choice(neighbors)
+            # Find boundary nodes that have neighbors with different cluster labels
+            boundary_candidates = []
+            for i in range(n):
+                graph_nbrs = np.where(W[i] > 0)[0]
+                dists = np.sum((X - X[i]) ** 2, axis=1)
+                spatial_nbrs = np.argsort(dists)[1:15]
+                nbrs = np.unique(np.concatenate([graph_nbrs, spatial_nbrs]))
+                if any(partition[j] != partition[i] for j in nbrs):
+                    boundary_candidates.append(i)
+
+            if len(boundary_candidates) > 0:
+                node = self.rng.choice(boundary_candidates)
+            else:
+                node = self.rng.randint(0, n)
+
+            graph_nbrs = np.where(W[node] > 0)[0]
+            dists = np.sum((X - X[node]) ** 2, axis=1)
+            spatial_nbrs = np.argsort(dists)[1:15]
+            candidate_nbrs = np.unique(np.concatenate([graph_nbrs, spatial_nbrs]))
+
+            # Filter candidate neighbors to those with DIFFERENT cluster labels
+            diff_nbrs = [j for j in candidate_nbrs if prop[j] != prop[node]]
+            if len(diff_nbrs) > 0:
+                target_node = self.rng.choice(diff_nbrs)
                 old_c = prop[node]
                 new_c = prop[target_node]
                 
-                # Check if moving node doesn't empty old_c when target_n_clusters is enforced
-                if old_c != new_c:
-                    if target_n_clusters is not None:
-                        if np.sum(prop == old_c) > 1:
-                            prop[node] = new_c
-                    else:
+                if target_n_clusters is not None:
+                    if np.sum(prop == old_c) > 1:
                         prop[node] = new_c
-                        _, prop = np.unique(prop, return_inverse=True)
+                else:
+                    prop[node] = new_c
+                    _, prop = np.unique(prop, return_inverse=True)
 
         elif move_type == "split":
             unique_clusters, counts = np.unique(partition, return_counts=True)

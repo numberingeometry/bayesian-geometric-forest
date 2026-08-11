@@ -103,9 +103,27 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         self.scale_features = scale_features
         self.random_state = random_state
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> "BayesianSpanningForest":
+    def fit(
+        self,
+        X: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        initial_partition: Optional[np.ndarray] = None
+    ) -> "BayesianSpanningForest":
         """
         Fit Bayesian Spanning Forest model to input dataset X.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Training data matrix.
+        y : Ignored
+        initial_partition : np.ndarray of shape (n_samples,), optional
+            User-provided initial cluster assignments for MCMC initialization.
+
+        Returns
+        -------
+        self : BayesianSpanningForest
+            Fitted estimator instance.
         """
         X_raw = np.asarray(X, dtype=np.float64)
         n_samples = X_raw.shape[0]
@@ -139,8 +157,10 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
             random_state=self.random_state
         )
 
-        # Initialize partition if n_clusters is specified
-        if self.n_clusters is not None and self.n_clusters > 1:
+        # Initialize partition if not explicitly supplied
+        if initial_partition is not None:
+            initial_part = np.asarray(initial_partition, dtype=np.int64)
+        elif self.n_clusters is not None and self.n_clusters > 1:
             from sklearn.cluster import SpectralClustering
             try:
                 sc = SpectralClustering(
