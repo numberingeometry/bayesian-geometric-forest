@@ -11,6 +11,28 @@ This package implements the theories and algorithms introduced in:
 
 ---
 
+## Literature Taxonomy & Theoretical Connections
+
+The diagram below illustrates the mathematical and methodological connections across all 5 foundational literature papers in the Bayesian Geometric Forest framework:
+
+![Literature Taxonomy Graph](figs/literature_taxonomy_graph.png)
+
+```mermaid
+graph TD
+    A["1. Bayesian Spanning Forest & Forest Process<br/>Duan & Roy (2023, JASA)<br/>Generative Model & Spectral Equivalence"] --> B["2. Asymptotic Consistency<br/>Zheng, Duan & Roy (2024, Bernoulli)<br/>Posterior Concentration P(C = C* | X) → 1"]
+    A --> C["3. Bayesian Spanning Tree (BST)<br/>Duan & Dunson (2024, JMLR)<br/>Variable Graph Backbone Estimation"]
+    A --> D["4. Bayesian Distance Clustering<br/>Duan & Dunson (2021, JMLR)<br/>Non-parametric Distance Likelihood P(D_ij | C)"]
+    A --> E["5. Exact Tree Sampler (Wilson LERW)<br/>Tam, Dunson & Duan (2025, Biometrika)<br/>Non-MCMC Loop-Erased Random Walk"]
+
+    style A fill:#ebf8ff,stroke:#3182ce,stroke-width:2px
+    style B fill:#f0fff4,stroke:#38a169,stroke-width:2px
+    style C fill:#fffaf0,stroke:#dd6b20,stroke-width:2px
+    style D fill:#faf5ff,stroke:#805ad5,stroke-width:2px
+    style E fill:#fff5f5,stroke:#e53e3e,stroke-width:2px
+```
+
+---
+
 ## Overview
 
 Traditional mixture models (such as Gaussian Mixture Models) rely on strong distributional assumptions and are vulnerable to model misspecification. Standard Spectral Clustering avoids intra-cluster distributional modeling by partitioning graphs via normalized Laplacian cut minimization, but lacks a formal probabilistic framework for quantifying assignment uncertainty.
@@ -28,17 +50,22 @@ Traditional mixture models (such as Gaussian Mixture Models) rely on strong dist
 
 ## Benchmarks & Empirical Performance
 
-| Dataset / Task | K-Means (ARI) | Spectral Clustering (ARI) | **Bayesian Geometric Forest (ARI)** |
-| :--- | :---: | :---: | :---: |
-| **Interleaved Two Moons** | 0.213 | 0.330 | **1.000** |
-| **Concentric Circles** | -0.006 | 1.000 | **1.000** |
-| **Heavy-Tailed Misspecified Mixture** | 0.934 | 0.983 | **0.983** |
-| **Non-Parametric Distance Clustering** | 0.280 | 0.350 | **1.000** |
-| **Single-Cell RNA-Seq (3 Cell Types)** | 0.280 | 0.350 | **0.419** |
+| Dataset / Method Pillar | K-Means (ARI) | Spectral Clustering (ARI) | **Bayesian Geometric Forest (ARI)** | Status / Model Class |
+| :--- | :---: | :---: | :---: | :--- |
+| **Interleaved Two Moons** | 0.213 | 0.330 | **1.000** | `BayesianSpanningForest` |
+| **Concentric Circles** | -0.006 | 1.000 | **1.000** | `BayesianSpanningForest` |
+| **Heavy-Tailed Misspecified Mixture** | 0.934 | 0.983 | **0.983** | `BayesianSpanningForest` |
+| **Non-Parametric Distance Matrix** | 0.280 | 0.350 | **1.000** | `BayesianDistanceClustering` |
+| **Single-Cell RNA-Seq (3 Cell Types)** | 0.280 | 0.350 | **0.419** | `BayesianSpanningForest` |
+| **Variable Dependence Backbone** | N/A | N/A | **Exact Tree Recovery** | `BayesianSpanningTree` |
+| **Semi-Supervised Constrained Clustering** | 0.250 | 0.300 | **100% Constraints Met** | `ConstrainedBayesianSpanningForest` |
 
 ---
 
 ## Visualization
+
+### Literature Taxonomy Graph
+![Literature Taxonomy Graph](figs/literature_taxonomy_graph.png)
 
 ### Synthetic Non-Linear Manifold Benchmarks
 ![Synthetic Benchmark Results](figs/synthetic_benchmark_results.png)
@@ -86,7 +113,7 @@ bayesian-geometric-forest/
 ├── docs/                          # Documentation & theoretical proofs breakdown
 │   ├── index.md                   # Site overview index
 │   └── theory.md                  # Complete mathematical proofs
-├── examples/                      # Demo scripts & benchmarks (01 through 07)
+├── examples/                      # Demo scripts & benchmarks (00 through 07)
 ├── figs/                          # Figures and HTML visualizer artifacts
 ├── tests/                         # Complete pytest unit test suite (27 tests)
 ├── mkdocs.yml                     # MkDocs documentation site configuration
