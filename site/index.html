@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Bayesian Spanning Forest and Forest Process for Robust Graphical Model-Based Spectral Clustering" /><meta name="author" content="Bobby Zhang" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Bayesian Geometric Forest</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Overview";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Bayesian Geometric Forest
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Overview</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#benchmarks-empirical-performance">Benchmarks &amp; Empirical Performance</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#visualization">Visualization</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#synthetic-non-linear-manifold-benchmarks">Synthetic Non-Linear Manifold Benchmarks</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bayesian-spanning-tree-dependence-backbone-network">Bayesian Spanning Tree Dependence Backbone Network</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#bayesian-distance-clustering-pairwise-matrices">Bayesian Distance Clustering Pairwise Matrices</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#semi-supervised-constrained-bsf-partitioning">Semi-Supervised Constrained BSF Partitioning</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#single-cell-rna-seq-cell-type-partitioning-uncertainty">Single-Cell RNA-Seq Cell-Type Partitioning &amp; Uncertainty</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#posterior-co-clustering-probability-matrix">Posterior Co-Clustering Probability Matrix</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#multi-chain-mcmc-convergence-diagnostics">Multi-Chain MCMC Convergence Diagnostics</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#interactive-web-visualizers-plotly">Interactive Web Visualizers (Plotly)</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#repository-structure">Repository Structure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#citation">Citation</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="theory/">Theory & Mathematics</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Bayesian Geometric Forest</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Overview</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/numberingeometry/bayesian-geometric-forest/edit/master/docs/index.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="bayesian-geometric-forest-bayesian-geometric-forest">Bayesian Geometric Forest (<code>bayesian-geometric-forest</code>)</h1>
+<p>A high-performance Python library for <strong>graphical model-based robust clustering</strong>, <strong>dependence backbone discovery</strong>, and <strong>exact tree sampling</strong> using <strong>Bayesian Spanning Forests</strong>, <strong>Forest Processes</strong>, and <strong>Bayesian Spanning Trees</strong>.</p>
+<p>This package implements the theories and algorithms introduced in:
+1. <strong>"Spectral Clustering, Bayesian Spanning Forest, and Forest Process"</strong> (Duan &amp; Roy, 2022/2023, <em>Journal of the American Statistical Association</em> / <a href="https://arxiv.org/abs/2202.00493">arXiv:2202.00493</a>)
+2. <strong>"Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest"</strong> (Zheng, Duan &amp; Roy, 2024, <em>Bernoulli</em> / <a href="https://arxiv.org/abs/2409.19129">arXiv:2409.19129</a>)
+3. <strong>"Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph"</strong> (Duan &amp; Dunson, 2024, <em>Journal of Machine Learning Research</em> / <a href="https://arxiv.org/abs/2012.11867">arXiv:2012.11867</a>)
+4. <strong>"Bayesian Distance Clustering"</strong> (Duan &amp; Dunson, 2021, <em>Journal of Machine Learning Research</em> / <a href="https://arxiv.org/abs/1806.07542">arXiv:1806.07542</a>)
+5. <strong>"Exact sampling of spanning trees via fast-forwarded random walks"</strong> (Tam, Dunson &amp; Duan, 2025, <em>Biometrika</em> / <a href="https://arxiv.org/abs/2305.10549">arXiv:2305.10549</a>)</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Traditional mixture models (such as Gaussian Mixture Models) rely on strong distributional assumptions and are vulnerable to model misspecification. Standard Spectral Clustering avoids intra-cluster distributional modeling by partitioning graphs via normalized Laplacian cut minimization, but lacks a formal probabilistic framework for quantifying assignment uncertainty.</p>
+<p><strong>Bayesian Geometric Forest</strong> bridges this gap:
+- <strong>Random Spanning Forest Generative Model</strong>: Represents cluster topology as a disjoint union of rooted spanning trees.
+- <strong>Kirchhoff's Matrix Tree Theorem</strong>: Computes partition functions and log-spanning tree weights <span class="arithmatex">\(\tau(C_k, W) = \det(L_{C_k, (uu)})\)</span> with numerical Cholesky log-determinants.
+- <strong>Forest Process Prior</strong>: An urn-process prior over graph partitions <span class="arithmatex">\(P(\mathcal{C} \mid \alpha, \beta, \theta) \propto \alpha^K \prod \Gamma(|C_k| - \beta) \, \tau(C_k, W)^\theta\)</span>.
+- <strong>Bayesian Spanning Tree (BST)</strong>: Estimates the variable dependence backbone network over feature dimensions without precision matrix inversion.
+- <strong>Bayesian Distance Clustering</strong>: Performs non-parametric Bayesian clustering directly on pairwise distance matrices without coordinate kernel shape assumptions.
+- <strong>Exact Tree Sampling (Wilson's LERW)</strong>: Provides exact, unbiased random spanning tree/forest generation via Loop-Erased Random Walks without MCMC mixing bottlenecks.
+- <strong>Semi-Supervised Constrained BSF</strong>: Supports domain Must-Link and Cannot-Link pairwise constraints.</p>
+<hr />
+<h2 id="benchmarks-empirical-performance">Benchmarks &amp; Empirical Performance</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Dataset / Task</th>
+<th style="text-align: center;">K-Means (ARI)</th>
+<th style="text-align: center;">Spectral Clustering (ARI)</th>
+<th style="text-align: center;"><strong>Bayesian Geometric Forest (ARI)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Interleaved Two Moons</strong></td>
+<td style="text-align: center;">0.213</td>
+<td style="text-align: center;">0.330</td>
+<td style="text-align: center;"><strong>1.000</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Concentric Circles</strong></td>
+<td style="text-align: center;">-0.006</td>
+<td style="text-align: center;">1.000</td>
+<td style="text-align: center;"><strong>1.000</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Heavy-Tailed Misspecified Mixture</strong></td>
+<td style="text-align: center;">0.934</td>
+<td style="text-align: center;">0.983</td>
+<td style="text-align: center;"><strong>0.983</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Non-Parametric Distance Clustering</strong></td>
+<td style="text-align: center;">0.280</td>
+<td style="text-align: center;">0.350</td>
+<td style="text-align: center;"><strong>1.000</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Single-Cell RNA-Seq (3 Cell Types)</strong></td>
+<td style="text-align: center;">0.280</td>
+<td style="text-align: center;">0.350</td>
+<td style="text-align: center;"><strong>0.419</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="visualization">Visualization</h2>
+<h3 id="synthetic-non-linear-manifold-benchmarks">Synthetic Non-Linear Manifold Benchmarks</h3>
+<p><img alt="Synthetic Benchmark Results" src="../figs/synthetic_benchmark_results.png" /></p>
+<h3 id="bayesian-spanning-tree-dependence-backbone-network">Bayesian Spanning Tree Dependence Backbone Network</h3>
+<p><img alt="BST Backbone Network" src="../figs/bst_backbone_network.png" /></p>
+<h3 id="bayesian-distance-clustering-pairwise-matrices">Bayesian Distance Clustering Pairwise Matrices</h3>
+<p><img alt="Distance Clustering Results" src="../figs/distance_clustering_results.png" /></p>
+<h3 id="semi-supervised-constrained-bsf-partitioning">Semi-Supervised Constrained BSF Partitioning</h3>
+<p><img alt="Constrained BSF Results" src="../figs/semi_supervised_bsf_results.png" /></p>
+<h3 id="single-cell-rna-seq-cell-type-partitioning-uncertainty">Single-Cell RNA-Seq Cell-Type Partitioning &amp; Uncertainty</h3>
+<p><img alt="scRNA-Seq Clustering Results" src="../figs/scrna_clustering_results.png" /></p>
+<h3 id="posterior-co-clustering-probability-matrix">Posterior Co-Clustering Probability Matrix</h3>
+<p><img alt="scRNA Co-Clustering Matrix" src="../figs/scrna_co_clustering_matrix.png" /></p>
+<h3 id="multi-chain-mcmc-convergence-diagnostics">Multi-Chain MCMC Convergence Diagnostics</h3>
+<p><img alt="MCMC Convergence Diagnostics" src="../figs/mcmc_multi_chain_diagnostics.png" /></p>
+<h3 id="interactive-web-visualizers-plotly">Interactive Web Visualizers (Plotly)</h3>
+<p>To view interactive 3D/2D Plotly visualizers directly in your browser:
+- <strong>Interactive Spanning Forest Graph</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_spanning_forest.html">Live GitHub Pages View</a>
+- <strong>Single-Cell RNA-Seq Bayesian Cell Uncertainty</strong>: <a href="https://numberingeometry.github.io/bayesian-geometric-forest/figs/interactive_scrna_uncertainty.html">Live GitHub Pages View</a></p>
+<hr />
+<h2 id="repository-structure">Repository Structure</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bayesian-geometric-forest/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── .github/
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   └── workflows/
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│       └── deploy_pages.yml       # Automated GitHub Pages CI deployment
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── bgforest/                      # Package source
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   ├── core/                      # Graph Laplacians &amp; Matrix Tree solvers
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   ├── models/                    # BSF, BST, Distance Clustering &amp; Constrained BSF
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   ├── samplers/                  # MCMC Sampler &amp; Wilson LERW Exact Sampler
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│   ├── datasets/                  # Synthetic benchmark &amp; scRNA-seq expression simulator
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│   ├── metrics/                   # ARI, NMI, uncertainty entropy &amp; theoretical bounds
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   └── viz/                       # Matplotlib &amp; Plotly interactive visualizers
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── docs/                          # Documentation &amp; theoretical proofs breakdown
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│   ├── index.md                   # Site overview index
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│   └── theory.md                  # Complete mathematical proofs
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>├── examples/                      # Demo scripts &amp; benchmarks (01 through 07)
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>├── figs/                          # Figures and HTML visualizer artifacts
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>├── tests/                         # Complete pytest unit test suite (27 tests)
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>├── mkdocs.yml                     # MkDocs documentation site configuration
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>├── PLAN.md                        # Master theoretical &amp; architecture plan
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>├── LICENSE                        # MIT License
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>├── pyproject.toml                 # Package setup
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>└── README.md                      # Documentation
+</code></pre></div>
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">bgforest</span> <span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">BayesianSpanningForest</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">BayesianSpanningTree</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">BayesianDistanceClustering</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">WilsonLERWSampler</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">from</span> <span class="nn">bgforest.datasets</span> <span class="kn">import</span> <span class="n">make_two_moons</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kn">from</span> <span class="nn">bgforest.metrics</span> <span class="kn">import</span> <span class="n">compute_clustering_metrics</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># 1. Non-Linear Manifold Clustering with BSF</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">X</span><span class="p">,</span> <span class="n">y_true</span> <span class="o">=</span> <span class="n">make_two_moons</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">180</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">bsf</span> <span class="o">=</span> <span class="n">BayesianSpanningForest</span><span class="p">(</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">n_clusters</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">graph_type</span><span class="o">=</span><span class="s2">&quot;knn&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">theta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="n">labels</span> <span class="o">=</span> <span class="n">bsf</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">compute_clustering_metrics</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;BSF Two Moons ARI: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;ARI&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="c1"># 2. Variable Dependence Backbone Estimation with BST</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="n">bst</span> <span class="o">=</span> <span class="n">BayesianSpanningTree</span><span class="p">(</span><span class="n">n_samples_tree</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="n">bst</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="n">backbone_net</span> <span class="o">=</span> <span class="n">bst</span><span class="o">.</span><span class="n">get_backbone_network</span><span class="p">()</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1"># 3. Exact Spanning Tree Sampling with Wilson LERW Sampler</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="n">sampler</span> <span class="o">=</span> <span class="n">WilsonLERWSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="n">tree_edges</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">sample_spanning_tree</span><span class="p">(</span><span class="n">bsf</span><span class="o">.</span><span class="n">W_feature_</span> <span class="k">if</span> <span class="n">bst</span><span class="o">.</span><span class="n">W_feature_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
+<hr />
+<h2 id="citation">Citation</h2>
+<p>If you use <code>bayesian-geometric-forest</code> in your research, please cite the underlying papers:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">duan2023spectral</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Spectral Clustering, Bayesian Spanning Forest, and Forest Process}</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Duan, Leo L and Roy, Arkaprava}</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of the American Statistical Association}</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2023}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">}</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">zheng2024consistency</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest}</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Zheng, Yu and Duan, L. L. and Roy, Arkaprava}</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Bernoulli}</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="p">}</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">duan2024bayesian</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph}</span><span class="p">,</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Duan, Leo L and Dunson, David B}</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of Machine Learning Research}</span><span class="p">,</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">  </span><span class="na">volume</span><span class="p">=</span><span class="s">{25}</span><span class="p">,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">  </span><span class="na">number</span><span class="p">=</span><span class="s">{102}</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">  </span><span class="na">pages</span><span class="p">=</span><span class="s">{1--35}</span><span class="p">,</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2024}</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="p">}</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">duan2021distance</span><span class="p">,</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Bayesian Distance Clustering}</span><span class="p">,</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Duan, Leo L and Dunson, David B}</span><span class="p">,</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Journal of Machine Learning Research}</span><span class="p">,</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">  </span><span class="na">volume</span><span class="p">=</span><span class="s">{22}</span><span class="p">,</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">  </span><span class="na">number</span><span class="p">=</span><span class="s">{224}</span><span class="p">,</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">  </span><span class="na">pages</span><span class="p">=</span><span class="s">{1--27}</span><span class="p">,</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2021}</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="p">}</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">tam2025exact</span><span class="p">,</span>
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{Exact sampling of spanning trees via fast-forwarded random walks}</span><span class="p">,</span>
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Tam, Edric and Dunson, David B and Duan, Leo L}</span><span class="p">,</span>
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{Biometrika}</span><span class="p">,</span>
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="w">  </span><span class="na">volume</span><span class="p">=</span><span class="s">{112}</span><span class="p">,</span>
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a><span class="w">  </span><span class="na">number</span><span class="p">=</span><span class="s">{2}</span><span class="p">,</span>
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2025}</span>
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a><span class="p">}</span>
+</code></pre></div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="theory/" class="btn btn-neutral float-right" title="Theory & Mathematics">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/numberingeometry/bayesian-geometric-forest" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+    
+      <span><a href="theory/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2026-08-11 19:37:33.394526+00:00
+-->

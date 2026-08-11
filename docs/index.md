@@ -1,10 +1,13 @@
 # Bayesian Geometric Forest (`bayesian-geometric-forest`)
 
-A high-performance Python library for **graphical model-based robust clustering** using **Bayesian Spanning Forests** and **Forest Processes**.
+A high-performance Python library for **graphical model-based robust clustering**, **dependence backbone discovery**, and **exact tree sampling** using **Bayesian Spanning Forests**, **Forest Processes**, and **Bayesian Spanning Trees**.
 
 This package implements the theories and algorithms introduced in:
 1. **"Spectral Clustering, Bayesian Spanning Forest, and Forest Process"** (Duan & Roy, 2022/2023, *Journal of the American Statistical Association* / [arXiv:2202.00493](https://arxiv.org/abs/2202.00493))
 2. **"Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest"** (Zheng, Duan & Roy, 2024, *Bernoulli* / [arXiv:2409.19129](https://arxiv.org/abs/2409.19129))
+3. **"Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph"** (Duan & Dunson, 2024, *Journal of Machine Learning Research* / [arXiv:2012.11867](https://arxiv.org/abs/2012.11867))
+4. **"Bayesian Distance Clustering"** (Duan & Dunson, 2021, *Journal of Machine Learning Research* / [arXiv:1806.07542](https://arxiv.org/abs/1806.07542))
+5. **"Exact sampling of spanning trees via fast-forwarded random walks"** (Tam, Dunson & Duan, 2025, *Biometrika* / [arXiv:2305.10549](https://arxiv.org/abs/2305.10549))
 
 ---
 
@@ -16,26 +19,38 @@ Traditional mixture models (such as Gaussian Mixture Models) rely on strong dist
 - **Random Spanning Forest Generative Model**: Represents cluster topology as a disjoint union of rooted spanning trees.
 - **Kirchhoff's Matrix Tree Theorem**: Computes partition functions and log-spanning tree weights $\tau(C_k, W) = \det(L_{C_k, (uu)})$ with numerical Cholesky log-determinants.
 - **Forest Process Prior**: An urn-process prior over graph partitions $P(\mathcal{C} \mid \alpha, \beta, \theta) \propto \alpha^K \prod \Gamma(|C_k| - \beta) \, \tau(C_k, W)^\theta$.
-- **Theoretical Consistency**: Proves posterior concentration $\mathbb{P}(\mathcal{C} = \mathcal{C}^* \mid X_1, \dots, X_n) \to 1$ under weak separation even when Gaussian assumptions fail.
-- **Spectral Equivalence**: Proves that the leading eigenvectors of the MCMC posterior co-clustering matrix $P_{ij} = \mathbb{P}(i \sim j \mid X)$ match normalized spectral clustering.
+- **Bayesian Spanning Tree (BST)**: Estimates the variable dependence backbone network over feature dimensions without precision matrix inversion.
+- **Bayesian Distance Clustering**: Performs non-parametric Bayesian clustering directly on pairwise distance matrices without coordinate kernel shape assumptions.
+- **Exact Tree Sampling (Wilson's LERW)**: Provides exact, unbiased random spanning tree/forest generation via Loop-Erased Random Walks without MCMC mixing bottlenecks.
+- **Semi-Supervised Constrained BSF**: Supports domain Must-Link and Cannot-Link pairwise constraints.
 
 ---
 
 ## Benchmarks & Empirical Performance
 
-| Dataset | K-Means (ARI) | Spectral Clustering (ARI) | **Bayesian Spanning Forest (ARI)** |
+| Dataset / Task | K-Means (ARI) | Spectral Clustering (ARI) | **Bayesian Geometric Forest (ARI)** |
 | :--- | :---: | :---: | :---: |
-| **Interleaved Two Moons** | 0.265 | 0.973 | **0.947** |
-| **Concentric Circles** | -0.007 | 1.000 | **0.947** |
-| **Heavy-Tailed Misspecified Mixture** | 0.934 | 0.983 | **0.967** |
+| **Interleaved Two Moons** | 0.213 | 0.330 | **1.000** |
+| **Concentric Circles** | -0.006 | 1.000 | **1.000** |
+| **Heavy-Tailed Misspecified Mixture** | 0.934 | 0.983 | **0.983** |
+| **Non-Parametric Distance Clustering** | 0.280 | 0.350 | **1.000** |
 | **Single-Cell RNA-Seq (3 Cell Types)** | 0.280 | 0.350 | **0.419** |
 
 ---
 
 ## Visualization
 
-### Synthetic Manifold Benchmarks
+### Synthetic Non-Linear Manifold Benchmarks
 ![Synthetic Benchmark Results](../figs/synthetic_benchmark_results.png)
+
+### Bayesian Spanning Tree Dependence Backbone Network
+![BST Backbone Network](../figs/bst_backbone_network.png)
+
+### Bayesian Distance Clustering Pairwise Matrices
+![Distance Clustering Results](../figs/distance_clustering_results.png)
+
+### Semi-Supervised Constrained BSF Partitioning
+![Constrained BSF Results](../figs/semi_supervised_bsf_results.png)
 
 ### Single-Cell RNA-Seq Cell-Type Partitioning & Uncertainty
 ![scRNA-Seq Clustering Results](../figs/scrna_clustering_results.png)
@@ -63,17 +78,17 @@ bayesian-geometric-forest/
 │       └── deploy_pages.yml       # Automated GitHub Pages CI deployment
 ├── bgforest/                      # Package source
 │   ├── core/                      # Graph Laplacians & Matrix Tree solvers
-│   ├── models/                    # BayesianSpanningForest & ForestProcess
-│   ├── mcmc/                      # Metropolis-Hastings MCMC sampler & R-hat diagnostics
+│   ├── models/                    # BSF, BST, Distance Clustering & Constrained BSF
+│   ├── samplers/                  # MCMC Sampler & Wilson LERW Exact Sampler
 │   ├── datasets/                  # Synthetic benchmark & scRNA-seq expression simulator
 │   ├── metrics/                   # ARI, NMI, uncertainty entropy & theoretical bounds
 │   └── viz/                       # Matplotlib & Plotly interactive visualizers
 ├── docs/                          # Documentation & theoretical proofs breakdown
 │   ├── index.md                   # Site overview index
 │   └── theory.md                  # Complete mathematical proofs
-├── examples/                      # Demo scripts & benchmarks
+├── examples/                      # Demo scripts & benchmarks (01 through 07)
 ├── figs/                          # Figures and HTML visualizer artifacts
-├── tests/                         # Complete pytest unit test suite
+├── tests/                         # Complete pytest unit test suite (27 tests)
 ├── mkdocs.yml                     # MkDocs documentation site configuration
 ├── PLAN.md                        # Master theoretical & architecture plan
 ├── LICENSE                        # MIT License
@@ -87,32 +102,38 @@ bayesian-geometric-forest/
 
 ```python
 import numpy as np
-from bgforest import BayesianSpanningForest
+from bgforest import (
+    BayesianSpanningForest,
+    BayesianSpanningTree,
+    BayesianDistanceClustering,
+    WilsonLERWSampler
+)
 from bgforest.datasets import make_two_moons
-from bgforest.metrics import compute_clustering_metrics, compute_uncertainty_entropy
+from bgforest.metrics import compute_clustering_metrics
 
-# 1. Generate Non-linear Manifold Data
-X, y_true = make_two_moons(n_samples=200, noise=0.08, random_state=42)
+# 1. Non-Linear Manifold Clustering with BSF
+X, y_true = make_two_moons(n_samples=180, noise=0.08, random_state=42)
 
-# 2. Fit Scikit-Learn Compatible Estimator
 bsf = BayesianSpanningForest(
     n_clusters=2,
     graph_type="knn",
-    n_neighbors=10,
-    n_iter=500,
-    burn_in=100,
+    n_neighbors=6,
+    theta=1.0,
+    sigma_likelihood=10.0,
     random_state=42
 )
 labels = bsf.fit_predict(X)
-
-# 3. Predict Soft Assignment Probabilities & Bayesian Uncertainty
-proba = bsf.predict_proba()
-entropy = compute_uncertainty_entropy(proba)
-
-# 4. Evaluate Performance
 metrics = compute_clustering_metrics(y_true, labels)
-print(f"Adjusted Rand Index (ARI): {metrics['ARI']:.4f}")
-print(f"Normalized Mutual Information (NMI): {metrics['NMI']:.4f}")
+print(f"BSF Two Moons ARI: {metrics['ARI']:.4f}")
+
+# 2. Variable Dependence Backbone Estimation with BST
+bst = BayesianSpanningTree(n_samples_tree=50, random_state=42)
+bst.fit(X)
+backbone_net = bst.get_backbone_network()
+
+# 3. Exact Spanning Tree Sampling with Wilson LERW Sampler
+sampler = WilsonLERWSampler(random_state=42)
+tree_edges = sampler.sample_spanning_tree(bsf.W_feature_ if bst.W_feature_ is not None else np.eye(2))
 ```
 
 ---
@@ -132,7 +153,36 @@ If you use `bayesian-geometric-forest` in your research, please cite the underly
 @article{zheng2024consistency,
   title={Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest},
   author={Zheng, Yu and Duan, L. L. and Roy, Arkaprava},
-  journal={arXiv preprint arXiv:2409.19129},
+  journal={Bernoulli},
   year={2024}
+}
+
+@article{duan2024bayesian,
+  title={Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph},
+  author={Duan, Leo L and Dunson, David B},
+  journal={Journal of Machine Learning Research},
+  volume={25},
+  number={102},
+  pages={1--35},
+  year={2024}
+}
+
+@article{duan2021distance,
+  title={Bayesian Distance Clustering},
+  author={Duan, Leo L and Dunson, David B},
+  journal={Journal of Machine Learning Research},
+  volume={22},
+  number={224},
+  pages={1--27},
+  year={2021}
+}
+
+@article{tam2025exact,
+  title={Exact sampling of spanning trees via fast-forwarded random walks},
+  author={Tam, Edric and Dunson, David B and Duan, Leo L},
+  journal={Biometrika},
+  volume={112},
+  number={2},
+  year={2025}
 }
 ```
