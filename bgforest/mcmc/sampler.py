@@ -98,7 +98,7 @@ class BSFMCMCSampler:
         n = X.shape[0]
 
         if self.sigma_likelihood is None:
-            self.sigma_likelihood = float(np.sqrt(np.var(X)))
+            self.sigma_likelihood = float(2.5 * np.sqrt(np.var(X)))
 
         if self.burn_in >= self.n_iter:
             self.burn_in = max(0, self.n_iter // 2)
@@ -124,13 +124,18 @@ class BSFMCMCSampler:
         n_accepted = 0
         n_proposed_moves = 0
 
+        # Precompute 2-hop graph adjacency matrix for fast graph boundary relocations
+        W_2hop = W @ W
+
         for it in range(self.n_iter):
             if target_n_clusters is not None:
                 move_type = "relocate"
             else:
                 move_type = self.rng.choice(["relocate", "split", "merge"], p=[0.6, 0.2, 0.2])
 
-            proposed_partition = self._propose_move(current_partition, W, X, move_type, target_n_clusters=target_n_clusters)
+            proposed_partition = self._propose_move(
+                current_partition, W, W_2hop, X, move_type, target_n_clusters=target_n_clusters
+            )
 
             if not np.array_equal(proposed_partition, current_partition):
                 n_proposed_moves += 1
@@ -139,7 +144,7 @@ class BSFMCMCSampler:
                 if not np.isneginf(proposed_log_post):
                     log_accept_ratio = proposed_log_post - current_log_post
                     half_burn = max(1, self.burn_in // 2)
-                    temp = 1.0 + 3.0 * np.exp(-it / float(half_burn))
+                    temp = 1.0 + 2.0 * np.exp(-it / float(half_burn))
 
                     if np.log(self.rng.uniform(0.0, 1.0)) < (log_accept_ratio / temp):
                         current_partition = proposed_partition
@@ -158,6 +163,7 @@ class BSFMCMCSampler:
         self,
         partition: np.ndarray,
         W: np.ndarray,
+        W_2hop: np.ndarray,
         X: np.ndarray,
         move_type: str,
         target_n_clusters: Optional[int] = None
@@ -167,13 +173,10 @@ class BSFMCMCSampler:
         prop = np.copy(partition)
 
         if move_type == "relocate":
-            # Find boundary nodes that have neighbors with different cluster labels
+            # Graph boundary node selection along graph W
             boundary_candidates = []
             for i in range(n):
-                graph_nbrs = np.where(W[i] > 0)[0]
-                dists = np.sum((X - X[i]) ** 2, axis=1)
-                spatial_nbrs = np.argsort(dists)[1:15]
-                nbrs = np.unique(np.concatenate([graph_nbrs, spatial_nbrs]))
+                nbrs = np.where(W[i] > 0)[0]
                 if any(partition[j] != partition[i] for j in nbrs):
                     boundary_candidates.append(i)
 
@@ -183,12 +186,13 @@ class BSFMCMCSampler:
                 node = self.rng.randint(0, n)
 
             graph_nbrs = np.where(W[node] > 0)[0]
-            dists = np.sum((X - X[node]) ** 2, axis=1)
-            spatial_nbrs = np.argsort(dists)[1:15]
-            candidate_nbrs = np.unique(np.concatenate([graph_nbrs, spatial_nbrs]))
+            diff_nbrs = [j for j in graph_nbrs if prop[j] != prop[node]]
+            
+            # Fallback to 2-hop graph neighbors if 1-hop graph neighbors belong to same cluster
+            if len(diff_nbrs) == 0:
+                two_hop_nbrs = np.where(W_2hop[node] > 0)[0]
+                diff_nbrs = [j for j in two_hop_nbrs if prop[j] != prop[node] and j != node]
 
-            # Filter candidate neighbors to those with DIFFERENT cluster labels
-            diff_nbrs = [j for j in candidate_nbrs if prop[j] != prop[node]]
             if len(diff_nbrs) > 0:
                 target_node = self.rng.choice(diff_nbrs)
                 old_c = prop[node]
