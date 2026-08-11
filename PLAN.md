@@ -1,150 +1,127 @@
-# Execution & Implementation Plan: `bayesian-geometric-forest`
+# Bayesian Geometric Forest (`bgforest`) — Comprehensive Methods Master Plan
 
-## Executive Overview
-`bayesian-geometric-forest` is a high-performance, modular Python library implementing the theories introduced in:
-1. **"Spectral Clustering, Bayesian Spanning Forest, and Forest Process"** (Duan & Roy, 2022/2023, JASA / arXiv:2202.00493)
-2. **"Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest"** (Zheng, Duan & Roy, 2024, arXiv:2409.19129)
-
-This package unifies **graph-based spectral methods** and **Bayesian nonparametrics**, modeling data partitions via random spanning forests while guaranteeing clustering consistency under model misspecification.
+This document outlines the theoretical architecture, literature survey, and step-by-step implementation plan for expanding `bayesian-geometric-forest` (`bgforest`) into a complete unified library covering all existing **Bayesian Spanning Forest**, **Forest Process**, **Bayesian Spanning Tree**, **Bayesian Distance Clustering**, and **Exact Tree Samplers** from the literature.
 
 ---
 
-## Primary Goals & Portfolio Objectives
-- **Theoretical Fidelity**: Faithfully implement the Matrix Tree Theorem, Forest Process urn prior, marginalized likelihood, and MCMC split-merge/edge-swap samplers.
-- **Scikit-Learn Compatible API**: Provide `BayesianSpanningForest` with familiar `fit`, `predict`, `fit_predict`, and `predict_proba` methods.
-- **Visualization Focus**: Deliver interactive visual tools (graph spanning forest animations, co-clustering posterior heatmaps, spectral eigenvector spectrum analysis, single-cell RNA-seq cell-type uncertainty plots).
-- **Professional Standard**: Clean modular structure, comprehensive test suite (`pytest`), sphinx/mkdocs documentation, CI workflow, and conventional commits **without AI co-author signatures**.
+## 1. Literature Survey & Methodological Taxonomy
 
----
-
-## Mathematical Formulation & Core Algorithms
-
-### 1. Graph Construction & Adjacency
-Given data $X = \{x_1, \dots, x_n\} \subset \mathbb{R}^d$, construct a similarity graph $G = (V, E, W)$:
-- **k-Nearest Neighbors (k-NN)** graph or Gaussian RBF kernel: $W_{ij} = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)$ for $(i,j) \in E$.
-- **Graph Laplacian**: Unnormalized $L = D - W$, Normalized $L_{sym} = D^{-1/2} L D^{-1/2}$.
-
-### 2. Bayesian Spanning Forest (BSF) Model
-- Data partition $\mathcal{C} = \{C_1, \dots, C_K\}$.
-- For each cluster $C_k$, the topological connection is modeled as a **rooted spanning tree** $T_k \sim \text{SpanningTree}(C_k, W)$.
-- **Matrix Tree Theorem (Kirchhoff's Theorem)**:
-  The total weight of all spanning trees in a connected component $C_k$ is given by any cofactor of the component Laplacian matrix $L_{C_k}$:
-  $$\tau(C_k, W) = \det(L_{C_k, (uu)})$$
-  where $L_{C_k, (uu)}$ is the submatrix formed by removing the $u$-th row and column.
-
-### 3. The Forest Process (Prior over Forests)
-- Defines a prior $P(\mathcal{C})$ extending the classical Dirichlet Process / Chinese Restaurant Process to graphs.
-- Prior distribution:
-  $$P(\mathcal{C} \mid \alpha, \beta) \propto \alpha^K \prod_{k=1}^K \Gamma(|C_k| - \beta) \cdot \tau(C_k, W)^{\theta}$$
-  where $\alpha > 0$ is the concentration parameter and $\beta \in [0, 1)$ governs cluster size discounting.
-
-### 4. Marginalized Likelihood & Posterior Inference
-- Marginalize latent edges $E_T$ within trees using log-determinants for numerical stability:
-  $$\ln P(X \mid \mathcal{C}) = \sum_{k=1}^K \left[ \ln \det(L_{C_k, (uu)}) - \frac{|C_k|-1}{2}\ln(2\pi\sigma^2) - \text{loss}(C_k) \right]$$
-- **MCMC Sampler**:
-  - **Edge-Swap Proposal**: Select a tree $T_k$, replace edge $e \in T_k$ with non-tree edge $e'$, updating tree state via Metropolis-Hastings.
-  - **Split-Merge Proposal**: Propose splitting a cluster into two trees or merging two adjacent trees with acceptance ratio evaluating the ratio of partition log-determinants.
-  - **Posterior Co-Clustering Matrix**: $P_{ij} = \mathbb{P}(\text{node } i \text{ and node } j \text{ in same cluster})$.
-  - **Eigen-decomposition of $P$**: Yields leading eigenvectors matching normalized spectral clustering.
-
-### 5. Theoretical Consistency (Zheng et al. 2024)
-- Demonstrates posterior concentration $\mathbb{P}(\mathcal{C} = \mathcal{C}^* \mid X_1, \dots, X_n) \to 1$ as $n \to \infty$ under weak cluster separation.
-- Derives an explicit upper bound on expected misclassification rate $\mathbb{E}[R_n]$.
-
----
-
-## Repository Architecture
+The literature on graphical model-based Bayesian spanning forest/tree methods comprises five foundational pillars:
 
 ```text
-bayesian-geometric-forest/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                 # Automated testing & linting
-├── docs/                          # Package documentation
-│   ├── theory.md                  # Detailed math & proofs breakdown
-│   ├── tutorials/                 # Step-by-step notebooks & visual guides
-│   └── api/                       # API documentation
-├── examples/                      # Interactive scripts & demos
-│   ├── 01_synthetic_benchmarks.py # Comparison on Two Moons, Circles, Spirals
-│   ├── 02_scrna_clustering.py     # Single-cell RNA-seq cell-type partitioning
-│   ├── 03_mcmc_diagnostics.py     # Convergence & trace plots
-│   └── 04_interactive_viz.py      # Interactive Plotly graph visualizer
-├── bgforest/                      # Core Package
-│   ├── __init__.py
-│   ├── core/                      # Fundamental graph & linear algebra routines
-│   │   ├── __init__.py
-│   │   ├── graph.py               # Adjacency, Laplacians, k-NN graph construction
-│   │   └── matrix_tree.py         # Log-determinant Matrix Tree Theorem solvers
-│   ├── models/                    # Model abstractions
-│   │   ├── __init__.py
-│   │   ├── bsf.py                 # BayesianSpanningForest estimator (sklearn compatible)
-│   │   └── forest_process.py      # Prior distribution classes
-│   ├── mcmc/                      # Sampler engines
-│   │   ├── __init__.py
-│   │   ├── sampler.py             # MCMC sampler (edge-swap & split-merge)
-│   │   └── diagnostics.py         # Gelman-Rubin R-hat, ESS, trace analysis
-│   ├── datasets/                  # Benchmark generators & datasets
-│   │   ├── __init__.py
-│   │   ├── synthetic.py           # Two Moons, Spirals, Concentric Circles, Blobs
-│   │   └── single_cell.py         # scRNA-seq expression simulator & preprocessor
-│   ├── metrics/                   # Performance & evaluation metrics
-│   │   ├── __init__.py
-│   │   └── evaluation.py          # ARI, NMI, misclassification bound, uncertainty entropy
-│   └── viz/                       # Visualization suite
-│       ├── __init__.py
-│       ├── graph_viz.py           # 2D/3D Forest graph overlay plotters
-│       ├── posterior_viz.py       # Co-clustering matrix & spectral eigenvector plots
-│       └── interactive.py         # Plotly interactive web visualizers
-├── tests/                         # Full unit & integration test suite
-│   ├── test_graph.py
-│   ├── test_matrix_tree.py
-│   ├── test_bsf_model.py
-│   ├── test_mcmc.py
-│   ├── test_datasets.py
-│   └── test_metrics.py
-├── .gitignore
-├── LICENSE                        # MIT License
-├── README.md                      # Professional README with benchmarks & figures
-└── pyproject.toml                 # Package setup & dependency specification
+                               ┌───────────────────────────────────────────────────────────┐
+                               │   Bayesian Geometric Spanning Forest & Graph Methods     │
+                               └─────────────────────────────┬─────────────────────────────┘
+                                                             │
+         ┌───────────────────────────────┬───────────────────┼───────────────────┬───────────────────────────────┐
+         │                               │                       │                   │                               │
+┌────────┴────────┐             ┌────────┴────────┐     ┌────────┴────────┐ ┌────────┴────────┐             ┌────────┴────────┐
+│ 1. Bayesian     │             │ 2. Bayesian     │     │ 3. Bayesian     │ │ 4. Exact Tree   │             │ 5. Semi-Super-  │
+│ Spanning Forest │             │ Spanning Tree   │     │ Distance        │ │ Samplers        │             │ vised & Dynamic │
+│ (BSF)           │             │ (BST Backbone)  │     │ Clustering      │ │ (Wilson LERW)   │             │ BSF             │
+└────────┬────────┘             └────────┬────────┘     └────────┬────────┘ └────────┬────────┘             └────────┬────────┘
+         │                               │                       │                   │                               │
+  Duan & Roy (2023)              Duan & Dunson           Duan & Dunson       Tam, Dunson &                   Must-Link / 
+  Zheng et al. (2024)            (2024, JMLR)            (2021, JMLR)        Duan (2025)                     Cannot-Link
+  JASA / Bernoulli                                                                                           Constraints
+```
+
+### Pillar 1: Bayesian Spanning Forest (BSF) & Forest Process
+- **Primary References**: 
+  - Duan, L. L., & Roy, A. (2023). *Spectral Clustering, Bayesian Spanning Forest, and Forest Process*. Journal of the American Statistical Association. ([arXiv:2202.00493](https://arxiv.org/abs/2202.00493))
+  - Zheng, Y., Duan, L. L., & Roy, A. (2024). *Consistency of Graphical Model-based Clustering: Robust Clustering using Bayesian Spanning Forest*. Bernoulli. ([arXiv:2409.19129](https://arxiv.org/abs/2409.19129))
+- **Mathematical Formulation**:
+  - A graph partition $\mathcal{C} = \{C_1, \dots, C_K\}$ is represented as a disjoint union of rooted spanning trees $T(C_k)$.
+  - **Prior**: Forest Process $P(\mathcal{C} \mid \alpha, \beta, \theta) \propto \alpha^K \prod_{k=1}^K \Gamma(|C_k| - \beta) \, \tau(C_k, W)^\theta$
+  - **Matrix Tree Partition Function**: $\tau(C_k, W) = \det(L_{C_k, (uu)})$ computed via LAPACK BLAS Cholesky decomposition.
+  - **Likelihood**: Gaussian / Non-parametric density $P(X \mid \mathcal{C}) = \prod_{k=1}^K P(X_{C_k})$.
+  - **Key Theorems**:
+    - *Spectral Equivalence Theorem*: Leading eigenvectors of posterior co-clustering matrix $P_{ij} = \mathbb{P}(i \sim j \mid X)$ match normalized spectral clustering.
+    - *Posterior Concentration Theorem*: $\mathbb{P}(\mathcal{C} = \mathcal{C}^* \mid X) \to 1$ as $n \to \infty$ under weak separation even when Gaussian assumptions fail.
+
+### Pillar 2: Bayesian Spanning Tree (BST) for Network Backbone Estimation
+- **Primary Reference**:
+  - Duan, L. L., & Dunson, D. B. (2024). *Bayesian Spanning Tree: Estimating the Backbone of the Dependence Graph*. Journal of Machine Learning Research, 25(102), 1-35. ([arXiv:2012.11867](https://arxiv.org/abs/2012.11867))
+- **Mathematical Formulation**:
+  - Instead of estimating a full dense precision matrix $\Omega$ or Gaussian Graphical Model, BST models the dependence structure of variables as a spanning tree backbone over the variable graph.
+  - Uses Kirchhoff's Matrix Tree theorem prior over tree configurations $T$ to yield exact closed-form marginalization of graph backbones without matrix inversion instability.
+
+### Pillar 3: Bayesian Distance Clustering
+- **Primary Reference**:
+  - Duan, L. L., & Dunson, D. B. (2021). *Bayesian Distance Clustering*. Journal of Machine Learning Research, 22(224), 1-27. ([arXiv:1806.07542](https://arxiv.org/abs/1806.07542))
+- **Mathematical Formulation**:
+  - Models the likelihood of pairwise distance matrix $D_{ij} = d(x_i, x_j)$ rather than original raw coordinates $X$.
+  - Uses Minimum Spanning Tree (MST) distance upper/lower bounds $d_{\text{MST}}(i, j)$ and distance likelihoods to achieve non-parametric clustering immune to parametric kernel shape assumptions.
+
+### Pillar 4: Exact Tree Samplers (Wilson's LERW & Fast-Forwarded Cover)
+- **Primary Reference**:
+  - Tam, E., Dunson, D. B., & Duan, L. L. (2025). *Exact sampling of spanning trees via fast-forwarded random walks*. Biometrika, 112(2). ([arXiv:2305.10549](https://arxiv.org/abs/2305.10549))
+- **Mathematical Formulation**:
+  - Replaces traditional Metropolis-Hastings MCMC mixing bottlenecks with **Wilson's Loop-Erased Random Walk (LERW)** algorithm and **Fast-Forwarded Cover Time sampling**.
+  - Generates exact, i.i.d. random spanning trees from the Uniform Spanning Tree (UST) or weighted spanning forest distribution in polynomial time $O(\tau_{\text{cover}})$.
+
+### Pillar 5: Constrained & Semi-Supervised Bayesian Spanning Forest
+- **Formulation**:
+  - Incorporates pairwise domain knowledge:
+    - **Must-Link Set $\mathcal{M}$**: $(i, j) \in \mathcal{M} \implies i \text{ and } j \text{ must belong to the same spanning tree component } C_k$.
+    - **Cannot-Link Set $\mathcal{C}_{\text{cannot}}$**: $(i, j) \in \mathcal{C}_{\text{cannot}} \implies i \text{ and } j \text{ must belong to different components}$.
+  - Constrained prior: $P(\mathcal{C} \mid \mathcal{M}, \mathcal{C}_{\text{cannot}}) = P(\mathcal{C}) \cdot \mathbb{I}(\mathcal{C} \text{ satisfies } \mathcal{M} \text{ and } \mathcal{C}_{\text{cannot}})$.
+
+---
+
+## 2. Package Architecture Roadmap
+
+We expand `bgforest` into a modular suite:
+
+```text
+bgforest/
+├── core/
+│   ├── graph.py                   # Laplacians, RBF kernel, local adaptive bandwidth
+│   └── matrix_tree.py             # Kirchhoff log-determinant log τ(C_k, W) Cholesky solver
+├── models/
+│   ├── bsf.py                     # BayesianSpanningForest (Unsupervised BSF Estimator)
+│   ├── bst.py                     # BayesianSpanningTree (Dependence Backbone Estimator)
+│   ├── distance_clustering.py     # BayesianDistanceClustering (Distance-based Model)
+│   ├── semi_supervised.py         # ConstrainedBayesianSpanningForest (Must-Link/Cannot-Link BSF)
+│   └── forest_process.py          # ForestProcess Prior Distribution Engine
+├── samplers/
+│   ├── mcmc.py                    # Metropolis-Hastings MCMC with Fiedler bisection & graph relocations
+│   └── wilson.py                  # Wilson's Loop-Erased Random Walk (LERW) Exact Sampler
+├── datasets/
+│   ├── synthetic.py               # Two Moons, Concentric Circles, Spirals, Misspecified Mixtures
+│   └── single_cell.py             # scRNA-seq expression simulator & PBMC 3k benchmark loader
+├── metrics/
+│   └── evaluation.py              # ARI, NMI, uncertainty entropy & theoretical spectral bounds
+└── viz/
+    ├── graph_viz.py               # Spanning Forest tree network visualizers
+    ├── posterior_viz.py           # Co-clustering heatmaps & trace diagnostics
+    └── interactive.py             # Plotly 3D/2D interactive HTML visualizers
 ```
 
 ---
 
-## Implementation Phases & Milestones
+## 3. Implementation Steps
 
-### Phase 1: Core Mathematical Engine & Graph Tools
-- Implement robust graph builder (`bgforest.core.graph`) for RBF kernels, k-NN, and Laplacian matrices.
-- Implement Matrix Tree Theorem log-determinant solver (`bgforest.core.matrix_tree`) using Cholesky / LU decomposition with high numerical stability for large matrices.
-- Write unit tests verifying spanning tree counts against known analytical graph properties.
+### Step 1: Implement `WilsonLERWSampler` (`bgforest/samplers/wilson.py`)
+- Implement Wilson's Loop-Erased Random Walk (LERW) algorithm for exact sampling of random spanning trees/forests.
+- Support weighted graph transitions $P_{ij} = W_{ij} / D_{ii}$.
 
-### Phase 2: Forest Process Prior & MCMC Sampler
-- Implement `ForestProcess` prior distribution (`bgforest.models.forest_process`).
-- Build MCMC sampler (`bgforest.mcmc.sampler`) supporting:
-  1. Intra-cluster tree edge swaps.
-  2. Inter-cluster split/merge Metropolis-Hastings proposals.
-- Implement MCMC diagnostic functions (R-hat, Effective Sample Size, log-posterior trace).
+### Step 2: Implement `BayesianSpanningTree` (`bgforest/models/bst.py`)
+- Build Scikit-Learn style estimator `BayesianSpanningTree` for variable dependence graph backbone estimation (Duan & Dunson 2024).
 
-### Phase 3: Scikit-Learn API Estimator (`BayesianSpanningForest`)
-- Wrap MCMC sampler in `BayesianSpanningForest` estimator class conforming to Scikit-Learn interface (`fit`, `predict`, `fit_predict`, `predict_proba`).
-- Compute posterior co-clustering matrix $P$ and extract leading eigenvectors to showcase theoretical equivalence with normalized spectral clustering.
+### Step 3: Implement `BayesianDistanceClustering` (`bgforest/models/distance_clustering.py`)
+- Build pairwise distance-based non-parametric clustering estimator `BayesianDistanceClustering` (Duan & Dunson 2021).
 
-### Phase 4: Datasets & Real-World Case Studies (scRNA-Seq)
-- Build synthetic geometric dataset generator (`Two Moons`, `Concentric Circles`, `Spirals`, `High-dim Blobs`).
-- Implement single-cell RNA-seq loader and simulated gene expression preprocessor (normalization, HVG selection, PCA embedding).
+### Step 4: Implement `ConstrainedBayesianSpanningForest` (`bgforest/models/semi_supervised.py`)
+- Build semi-supervised BSF estimator supporting `must_link` and `cannot_link` constraints.
 
-### Phase 5: Visualization & Interactive Suite
-- Build static matplotlib visualizers for tree overlay and co-clustering heatmaps.
-- Build interactive Plotly visualizer for exploring posterior tree states, clustering uncertainty, and spectral embeddings.
-
-### Phase 6: Documentation, Tests & GitHub Release
-- Write comprehensive README.md with math summary, benchmarks, visual assets, and quick-start guide.
-- Complete full test suite (`pytest`) with >90% code coverage.
-- Create automated GitHub Actions CI pipeline.
+### Step 5: Complete Benchmark Scripts & Unit Tests
+- Add examples `05_bayesian_spanning_tree.py`, `06_distance_clustering.py`, and `07_semi_supervised_bsf.py`.
+- Expand unit test suite under `tests/` to cover all new models.
 
 ---
 
-## Commit & Quality Guidelines
-- **Conventional Commits**: Format every commit as `feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`, `test: ...`, or `chore: ...`.
-- **Zero AI Signatures**: Do not append any `Co-authored-by: Antigravity` or AI metadata to git commits.
-- **No Emojis**: Maintain a strictly clean, professional technical document tone.
-- **Repository Scope**: All work kept strictly inside `C:\Users\15002\repos\bayesian-geometric-forest`.
+## 4. Verification & Quality Control
+- Zero AI co-author signatures on git commits (`Bobby Zhang <chelseaandmadrid@gmail.com>`).
+- Zero emojis anywhere in codebase or documentation.
+- All unit tests pass cleanly with 100% test success rate.

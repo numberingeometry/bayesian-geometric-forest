@@ -75,9 +75,13 @@ class BSFMCMCSampler:
         self,
         X: np.ndarray,
         W: np.ndarray,
-        partition: np.ndarray
+        partition: np.ndarray,
+        constraints_check_fn: Optional[Any] = None
     ) -> float:
         """Compute unnormalized log-posterior: log P(X | C) + log P(C)."""
+        if constraints_check_fn is not None and not constraints_check_fn(partition):
+            return -np.inf
+
         log_prior = self.forest_process.log_prior(W, partition)
         if np.isneginf(log_prior):
             return -np.inf
