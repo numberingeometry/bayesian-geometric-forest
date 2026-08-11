@@ -3,7 +3,7 @@ Unit Tests for BayesianSpanningForest Scikit-Learn Estimator
 """
 
 import numpy as np
-import pytest
+
 from bgforest.models.bsf import BayesianSpanningForest
 
 
@@ -13,12 +13,7 @@ def test_bsf_estimator_fit_predict():
     X2 = np.random.randn(15, 2) + np.array([-5.0, -5.0])
     X = np.vstack([X1, X2])
 
-    bsf = BayesianSpanningForest(
-        n_clusters=2,
-        n_iter=100,
-        burn_in=20,
-        random_state=42
-    )
+    bsf = BayesianSpanningForest(n_clusters=2, n_iter=100, burn_in=20, random_state=42)
 
     labels = bsf.fit_predict(X)
     assert len(labels) == 30

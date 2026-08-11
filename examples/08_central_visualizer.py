@@ -6,9 +6,11 @@ Generates a state-of-the-art, publication-grade interactive Plotly web dashboard
 graph, 3D/2D manifold scatter plots, heatmap matrix explorers, and live metric pills.
 """
 
-import json
+import base64
+from pathlib import Path
 import numpy as np
 import plotly.graph_objects as go
+from plotly.offline import get_plotlyjs
 from plotly.subplots import make_subplots
 
 from bgforest.models.bsf import BayesianSpanningForest
@@ -161,11 +163,16 @@ def generate_central_visualizer():
         margin=dict(l=40, r=40, t=30, b=40)
     )
 
-    # Convert Plotly figures to clean JSON strings
+    # Embed all runtime dependencies and image assets.  The dashboard is then
+    # usable from GitHub Pages, a local file, or an exported artifact without a
+    # CDN request or relative-path data dependency.
     bench_str = fig_bench.to_json()
     rna_str = fig_rna.to_json()
     bst_str = fig_bst.to_json()
     bdc_str = fig_bdc.to_json()
+    plotly_js = get_plotlyjs()
+    taxonomy_path = Path(__file__).resolve().parents[1] / "figs" / "literature_taxonomy_graph.png"
+    taxonomy_image = base64.b64encode(taxonomy_path.read_bytes()).decode("ascii")
 
     # Handcrafted, Human-Engineered HTML Template
     html_content = f"""<!DOCTYPE html>
@@ -174,10 +181,7 @@ def generate_central_visualizer():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bayesian Geometric Forest — Research & Visual Analytics Portal</title>
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>{plotly_js}</script>
     <style>
         :root {{
             --bg-base: #090d16;
@@ -196,7 +200,7 @@ def generate_central_visualizer():
             padding: 0;
             background-color: var(--bg-base);
             color: var(--text-main);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             -webkit-font-smoothing: antialiased;
         }}
         .top-navbar {{
@@ -315,7 +319,7 @@ def generate_central_visualizer():
         .metric-value {{
             font-size: 1.6rem;
             font-weight: 700;
-            font-family: 'Fira Code', monospace;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
             color: var(--accent-emerald);
         }}
         .metric-desc {{
@@ -382,7 +386,7 @@ def generate_central_visualizer():
             <div class="brand-badge">BGF</div>
             <div>
                 <span class="brand-title">Bayesian Geometric Forest</span>
-                <span class="brand-subtitle">Interactive Analytics Portal</span>
+                <span class="brand-subtitle">Methods explorer</span>
             </div>
         </div>
         <a href="https://github.com/numberingeometry/bayesian-geometric-forest" target="_blank" class="repo-link">GitHub Repository</a>
@@ -394,23 +398,23 @@ def generate_central_visualizer():
         <div class="metric-grid">
             <div class="metric-card">
                 <div class="metric-label">Two Moons ARI</div>
-                <div class="metric-value">1.000</div>
-                <div class="metric-desc">Bayesian Spanning Forest</div>
+                <div class="metric-value">{m_tm['ARI']:.3f}</div>
+                <div class="metric-desc">Two-moons benchmark · BSF</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">Concentric Circles ARI</div>
-                <div class="metric-value">1.000</div>
-                <div class="metric-desc">Bayesian Spanning Forest</div>
+                <div class="metric-value">{m_cc['ARI']:.3f}</div>
+                <div class="metric-desc">Concentric-circles benchmark · BSF</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Distance Clustering ARI</div>
-                <div class="metric-value">1.000</div>
-                <div class="metric-desc">Pairwise Matrix Model</div>
+                <div class="metric-label">Distance model ARI</div>
+                <div class="metric-value">{m_bdc['ARI']:.3f}</div>
+                <div class="metric-desc">Two-moons benchmark · experimental</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Heavy-Tailed Mixture ARI</div>
-                <div class="metric-value">0.983</div>
-                <div class="metric-desc">Misspecified Gaussian</div>
+                <div class="metric-label">Dashboard bundle</div>
+                <div class="metric-value">Offline</div>
+                <div class="metric-desc">Charts and assets are self-contained</div>
             </div>
         </div>
 
@@ -427,16 +431,16 @@ def generate_central_visualizer():
         <div id="taxonomy" class="section-panel active">
             <div class="panel-header">
                 <h2 class="panel-title">Theoretical Framework & Literature Taxonomy</h2>
-                <p class="panel-desc">Methodological connections across 5 foundational publications in Bayesian Spanning Forests, Spanning Trees, Distance Likelihoods, and Wilson's Exact LERW Sampler.</p>
+                <p class="panel-desc">A map of the related ideas behind graph partitions, dependence trees, distance-based clustering, and loop-erased random walks.</p>
             </div>
-            <img src="literature_taxonomy_graph.png" alt="Literature Taxonomy Graph" class="taxonomy-img">
+            <img src="data:image/png;base64,{taxonomy_image}" alt="Literature taxonomy graph" class="taxonomy-img">
         </div>
 
         <!-- Section 2: Synthetic Manifolds -->
         <div id="benchmarks" class="section-panel">
             <div class="panel-header">
                 <h2 class="panel-title">Non-Linear Manifold Clustering (Bayesian Spanning Forest)</h2>
-                <p class="panel-desc">Cluster recovery on Interleaved Two Moons and Concentric Circles datasets. Achieves ARI = 1.000 via Matrix Tree Theorem partition functions.</p>
+                <p class="panel-desc">Two standard nonlinear examples, shown with the fitted partition. Hover for observation-level detail.</p>
             </div>
             <div class="chart-frame" id="chart-benchmarks"></div>
         </div>
@@ -445,7 +449,7 @@ def generate_central_visualizer():
         <div id="scrna" class="section-panel">
             <div class="panel-header">
                 <h2 class="panel-title">Single-Cell RNA-Seq 3D PCA & Bayesian Cell Uncertainty</h2>
-                <p class="panel-desc">3D PCA expression embedding across 3 cell types. Color gradient represents posterior cell assignment uncertainty entropy H(i).</p>
+                <p class="panel-desc">A simulated single-cell embedding. Colour shows assignment entropy, so uncertain boundary cells are visible immediately.</p>
             </div>
             <div class="chart-frame" id="chart-scrna"></div>
         </div>
@@ -454,7 +458,7 @@ def generate_central_visualizer():
         <div id="bst" class="section-panel">
             <div class="panel-header">
                 <h2 class="panel-title">Bayesian Spanning Tree (BST) Variable Dependence Network</h2>
-                <p class="panel-desc">Posterior inclusion probability matrix P((u, v) in T | X) across variable dimensions estimated via Wilson's Loop-Erased Random Walk.</p>
+                <p class="panel-desc">Pairwise posterior edge-inclusion frequencies from weighted spanning-tree draws.</p>
             </div>
             <div class="chart-frame" id="chart-bst"></div>
         </div>
@@ -462,8 +466,8 @@ def generate_central_visualizer():
         <!-- Section 5: Bayesian Distance Clustering -->
         <div id="distance" class="section-panel">
             <div class="panel-header">
-                <h2 class="panel-title">Bayesian Distance Clustering (Pairwise Matrix Likelihood)</h2>
-                <p class="panel-desc">Posterior co-clustering probability matrix P_ij evaluated directly on pairwise distance matrix D_ij without coordinate kernel shape assumptions (ARI = 1.000).</p>
+                <h2 class="panel-title">Distance-based clustering (experimental)</h2>
+                <p class="panel-desc">An exploratory pairwise-distance co-clustering view. It is kept separate from the validated BSF inference path.</p>
             </div>
             <div class="chart-frame" id="chart-distance"></div>
         </div>
@@ -471,11 +475,11 @@ def generate_central_visualizer():
     </div>
 
     <footer>
-        Bayesian Geometric Forest (`bayesian-geometric-forest`) &bull; Research & Analytics Hub &bull; 2026
+        Bayesian Geometric Forest &bull; Reproducible examples generated from this repository
     </footer>
 
     <script>
-        // Parse Plotly JSON data safely
+        // All figure data and Plotly itself are embedded in this document.
         var specBench = {bench_str};
         var specRna = {rna_str};
         var specBst = {bst_str};
@@ -503,9 +507,10 @@ def generate_central_visualizer():
             document.getElementById(sectionId).classList.add('active');
             element.classList.add('active');
 
-            // Force Plotly relayout to resize charts properly on active tab
+            // Hidden charts need an explicit resize when their panel becomes visible.
             setTimeout(function() {{
-                window.dispatchEvent(new Event('resize'));
+                var chart = document.getElementById('chart-' + sectionId);
+                if (chart) {{ Plotly.Plots.resize(chart); }}
             }}, 50);
         }}
     </script>

@@ -1,21 +1,25 @@
-"""
-Bayesian Spanning Forest MCMC Sampler Engine
-============================================
-Implements Metropolis-Hastings Markov Chain Monte Carlo sampling routines 
-for posterior inference over random spanning forests (Duan & Roy, 2022/2023).
+"""Posterior sampler for fixed-cardinality Bayesian spanning forests.
+
+The sampler uses single-site Gibbs updates.  Each update enumerates all valid
+existing-cluster assignments for one observation and draws from their exact
+conditional posterior probabilities.  Unlike the earlier heuristic relocate /
+split / merge routine, this kernel needs neither an annealing schedule nor an
+omitted Metropolis-Hastings proposal correction.
 """
 
-from typing import List, Tuple, Dict, Any, Optional, Union
+from typing import Callable, List, Optional, Union
+
 import numpy as np
-from bgforest.core.graph import compute_laplacian, extract_cluster_submatrix
-from bgforest.core.matrix_tree import compute_forest_log_spanning_trees
+from scipy.special import logsumexp
+
+from bgforest.core.graph import validate_similarity_matrix
 from bgforest.models.forest_process import ForestProcess
+
+ConstraintCheck = Callable[[np.ndarray], bool]
 
 
 class BSFMCMCSampler:
-    """
-    Metropolis-Hastings MCMC sampler for Bayesian Spanning Forest posteriors.
-    """
+    """Gibbs sampler for partitions with a fixed positive number of clusters."""
 
     def __init__(
         self,
@@ -24,51 +28,45 @@ class BSFMCMCSampler:
         burn_in: int = 300,
         thinning: int = 1,
         sigma_likelihood: Optional[float] = None,
-        random_state: Optional[Union[int, np.random.RandomState]] = None
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
     ):
+        if n_iter < 1:
+            raise ValueError("n_iter must be at least 1.")
+        if burn_in < 0:
+            raise ValueError("burn_in must be non-negative.")
+        if thinning < 1:
+            raise ValueError("thinning must be at least 1.")
+        if sigma_likelihood is not None and sigma_likelihood <= 0:
+            raise ValueError("sigma_likelihood must be strictly positive.")
+
         self.forest_process = forest_process if forest_process is not None else ForestProcess()
         self.n_iter = int(n_iter)
         self.burn_in = int(burn_in)
         self.thinning = int(thinning)
         self.sigma_likelihood = sigma_likelihood
-
-        if isinstance(random_state, np.random.RandomState):
-            self.rng = random_state
-        else:
-            self.rng = np.random.RandomState(random_state)
+        self.rng = (
+            random_state
+            if isinstance(random_state, np.random.RandomState)
+            else np.random.RandomState(random_state)
+        )
 
         self.traces_: List[float] = []
         self.samples_: List[np.ndarray] = []
         self.acceptance_rate_: float = 0.0
+        self.n_clusters_: Optional[int] = None
 
-    def compute_log_likelihood(
-        self,
-        X: np.ndarray,
-        W: np.ndarray,
-        partition: np.ndarray
-    ) -> float:
-        """
-        Compute marginal log-likelihood P(X | C) given partition C.
-        """
-        n, d = X.shape
+    def compute_log_likelihood(self, X: np.ndarray, W: np.ndarray, partition: np.ndarray) -> float:
+        """Compute the fixed-variance within-cluster Gaussian log likelihood."""
+        del W  # retained for backward-compatible method signature
+        X = np.asarray(X, dtype=np.float64)
         partition = np.asarray(partition, dtype=np.int64)
-        unique_clusters = np.unique(partition)
-
-        sigma_sq = (self.sigma_likelihood ** 2) if self.sigma_likelihood is not None else max(1e-4, np.var(X))
-
+        sigma_sq = self.sigma_likelihood**2
         log_lik = 0.0
-        for k in unique_clusters:
-            idx = np.where(partition == k)[0]
-            m = len(idx)
-            if m <= 1:
-                continue
-
-            X_k = X[idx]
-            mean_k = np.mean(X_k, axis=0)
-            sse_k = np.sum((X_k - mean_k) ** 2)
-
-            log_lik += - sse_k / (2.0 * sigma_sq)
-
+        for label in np.unique(partition):
+            X_k = X[partition == label]
+            if len(X_k) > 1:
+                centered = X_k - np.mean(X_k, axis=0)
+                log_lik -= float(np.sum(centered * centered)) / (2.0 * sigma_sq)
         return float(log_lik)
 
     def compute_log_posterior(
@@ -76,189 +74,148 @@ class BSFMCMCSampler:
         X: np.ndarray,
         W: np.ndarray,
         partition: np.ndarray,
-        constraints_check_fn: Optional[Any] = None
+        constraints_check_fn: Optional[ConstraintCheck] = None,
     ) -> float:
-        """Compute unnormalized log-posterior: log P(X | C) + log P(C)."""
+        """Compute the unnormalised posterior and reject infeasible states."""
+        partition = np.asarray(partition, dtype=np.int64)
         if constraints_check_fn is not None and not constraints_check_fn(partition):
             return -np.inf
-
         log_prior = self.forest_process.log_prior(W, partition)
         if np.isneginf(log_prior):
             return -np.inf
+        return float(log_prior + self.compute_log_likelihood(X, W, partition))
 
-        log_lik = self.compute_log_likelihood(X, W, partition)
-        return log_prior + log_lik
+    @staticmethod
+    def _canonicalize(partition: np.ndarray) -> np.ndarray:
+        """Relabel a partition by first occurrence without changing memberships."""
+        mapping = {}
+        result = np.empty(len(partition), dtype=np.int64)
+        next_label = 0
+        for i, value in enumerate(partition):
+            value = int(value)
+            if value not in mapping:
+                mapping[value] = next_label
+                next_label += 1
+            result[i] = mapping[value]
+        return result
+
+    def _initial_partition(self, W: np.ndarray, target_n_clusters: int) -> np.ndarray:
+        n = W.shape[0]
+        if target_n_clusters == 1:
+            return np.zeros(n, dtype=np.int64)
+        from sklearn.cluster import SpectralClustering
+
+        try:
+            return SpectralClustering(
+                n_clusters=target_n_clusters,
+                affinity="precomputed",
+                n_init=10,
+                random_state=self.rng.randint(0, 2**31 - 1),
+            ).fit_predict(W)
+        except Exception:
+            # Guaranteed non-empty fallback with no global RNG dependence.
+            return self.rng.permutation(np.arange(n)) % target_n_clusters
 
     def sample(
         self,
         X: np.ndarray,
         W: np.ndarray,
         initial_partition: Optional[np.ndarray] = None,
-        target_n_clusters: Optional[int] = None
+        target_n_clusters: Optional[int] = None,
+        constraints_check_fn: Optional[ConstraintCheck] = None,
     ) -> List[np.ndarray]:
+        """Draw posterior samples using valid single-site Gibbs transitions.
+
+        ``target_n_clusters`` is intentionally required in practice: the
+        transition kernel samples a well-defined posterior conditional on K.
+        Model selection for K belongs outside this fixed-K kernel.
         """
-        Execute MCMC chain to sample partitions from posterior.
-        """
+        X = np.asarray(X, dtype=np.float64)
+        if X.ndim != 2 or X.shape[0] == 0 or not np.all(np.isfinite(X)):
+            raise ValueError("X must be a non-empty 2D array containing finite values.")
+        W = validate_similarity_matrix(W)
+        if W.shape[0] != X.shape[0]:
+            raise ValueError("X and W must have the same number of observations.")
         n = X.shape[0]
 
         if self.sigma_likelihood is None:
-            self.sigma_likelihood = float(2.5 * np.sqrt(np.var(X)))
+            self.sigma_likelihood = float(max(1e-4, 2.5 * np.sqrt(np.var(X))))
 
-        if self.burn_in >= self.n_iter:
-            self.burn_in = max(0, self.n_iter // 2)
-
-        if initial_partition is not None:
-            current_partition = np.copy(initial_partition)
+        if initial_partition is None:
+            k = int(target_n_clusters) if target_n_clusters is not None else min(4, n)
+            current = self._initial_partition(W, k)
         else:
-            k_init = target_n_clusters if target_n_clusters is not None else 4
-            from sklearn.cluster import SpectralClustering
-            try:
-                sc = SpectralClustering(
-                    n_clusters=k_init, affinity="precomputed",
-                    n_init=1, random_state=self.rng.randint(0, 10000)
+            current = self._canonicalize(np.asarray(initial_partition, dtype=np.int64))
+            if current.ndim != 1 or len(current) != n:
+                raise ValueError(
+                    "initial_partition must be a 1D array with one label per observation."
                 )
-                current_partition = sc.fit_predict(W)
-            except Exception:
-                current_partition = self.rng.randint(0, k_init, size=n)
+            k = int(target_n_clusters) if target_n_clusters is not None else len(np.unique(current))
 
-        current_log_post = self.compute_log_posterior(X, W, current_partition)
+        if not 1 <= k <= n:
+            raise ValueError("target_n_clusters must be between 1 and n_samples.")
+        if len(np.unique(current)) != k:
+            raise ValueError(
+                "initial_partition must contain exactly target_n_clusters non-empty clusters."
+            )
+        if constraints_check_fn is not None and not constraints_check_fn(current):
+            raise ValueError("initial_partition violates the supplied constraints.")
 
+        self.n_clusters_ = k
+        effective_burn_in = min(self.burn_in, self.n_iter - 1)
         self.traces_ = []
         self.samples_ = []
-        n_accepted = 0
-        n_proposed_moves = 0
+        moved = 0
+        update_attempts = 0
+        current_log_post = self.compute_log_posterior(X, W, current, constraints_check_fn)
+        if np.isneginf(current_log_post):
+            raise ValueError("The initial partition has zero posterior probability.")
 
-        # Precompute 2-hop graph adjacency matrix for fast graph boundary relocations
-        W_2hop = W @ W
+        for iteration in range(self.n_iter):
+            # Random scan avoids systematic order effects while preserving Gibbs invariance.
+            node = int(self.rng.randint(n))
+            old_label = int(current[node])
+            counts = np.bincount(current, minlength=k)
+            candidate_labels = np.arange(k)
+            if counts[old_label] == 1:
+                candidate_labels = candidate_labels[candidate_labels == old_label]
 
-        for it in range(self.n_iter):
-            if target_n_clusters is not None:
-                move_type = "relocate"
-            else:
-                move_type = self.rng.choice(["relocate", "split", "merge"], p=[0.6, 0.2, 0.2])
+            candidates, log_weights = [], []
+            for label in candidate_labels:
+                candidate = current.copy()
+                candidate[node] = label
+                score = self.compute_log_posterior(X, W, candidate, constraints_check_fn)
+                if np.isfinite(score):
+                    candidates.append(candidate)
+                    log_weights.append(score)
 
-            proposed_partition = self._propose_move(
-                current_partition, W, W_2hop, X, move_type, target_n_clusters=target_n_clusters
-            )
-
-            if not np.array_equal(proposed_partition, current_partition):
-                n_proposed_moves += 1
-                proposed_log_post = self.compute_log_posterior(X, W, proposed_partition)
-
-                if not np.isneginf(proposed_log_post):
-                    log_accept_ratio = proposed_log_post - current_log_post
-                    half_burn = max(1, self.burn_in // 2)
-                    temp = 1.0 + 2.0 * np.exp(-it / float(half_burn))
-
-                    if np.log(self.rng.uniform(0.0, 1.0)) < (log_accept_ratio / temp):
-                        current_partition = proposed_partition
-                        current_log_post = proposed_log_post
-                        n_accepted += 1
-
+            if not candidates:
+                raise RuntimeError("No feasible Gibbs assignment exists for the current state.")
+            probabilities = np.exp(np.asarray(log_weights) - logsumexp(log_weights))
+            selected = int(self.rng.choice(len(candidates), p=probabilities))
+            proposal = candidates[selected]
+            update_attempts += 1
+            if proposal[node] != current[node]:
+                moved += 1
+            current = proposal
+            current_log_post = float(log_weights[selected])
             self.traces_.append(current_log_post)
 
-            if it >= self.burn_in and (it - self.burn_in) % self.thinning == 0:
-                self.samples_.append(np.copy(current_partition))
+            if (
+                iteration >= effective_burn_in
+                and (iteration - effective_burn_in) % self.thinning == 0
+            ):
+                self.samples_.append(self._canonicalize(current))
 
-        self.acceptance_rate_ = n_accepted / float(max(1, n_proposed_moves))
+        self.acceptance_rate_ = moved / float(max(1, update_attempts))
         return self.samples_
 
-    def _propose_move(
-        self,
-        partition: np.ndarray,
-        W: np.ndarray,
-        W_2hop: np.ndarray,
-        X: np.ndarray,
-        move_type: str,
-        target_n_clusters: Optional[int] = None
-    ) -> np.ndarray:
-        """Helper to generate MCMC candidate state proposals."""
-        n = len(partition)
-        prop = np.copy(partition)
-
-        if move_type == "relocate":
-            # Graph boundary node selection along graph W
-            boundary_candidates = []
-            for i in range(n):
-                nbrs = np.where(W[i] > 0)[0]
-                if any(partition[j] != partition[i] for j in nbrs):
-                    boundary_candidates.append(i)
-
-            if len(boundary_candidates) > 0:
-                node = self.rng.choice(boundary_candidates)
-            else:
-                node = self.rng.randint(0, n)
-
-            graph_nbrs = np.where(W[node] > 0)[0]
-            diff_nbrs = [j for j in graph_nbrs if prop[j] != prop[node]]
-            
-            # Fallback to 2-hop graph neighbors if 1-hop graph neighbors belong to same cluster
-            if len(diff_nbrs) == 0:
-                two_hop_nbrs = np.where(W_2hop[node] > 0)[0]
-                diff_nbrs = [j for j in two_hop_nbrs if prop[j] != prop[node] and j != node]
-
-            if len(diff_nbrs) > 0:
-                target_node = self.rng.choice(diff_nbrs)
-                old_c = prop[node]
-                new_c = prop[target_node]
-                
-                if target_n_clusters is not None:
-                    if np.sum(prop == old_c) > 1:
-                        prop[node] = new_c
-                else:
-                    prop[node] = new_c
-                    _, prop = np.unique(prop, return_inverse=True)
-
-        elif move_type == "split":
-            unique_clusters, counts = np.unique(partition, return_counts=True)
-            splittable = unique_clusters[counts >= 3]
-            if len(splittable) > 0:
-                c_split = self.rng.choice(splittable)
-                nodes_c = np.where(partition == c_split)[0]
-                m = len(nodes_c)
-
-                sub_W = W[np.ix_(nodes_c, nodes_c)]
-                sub_L = compute_laplacian(sub_W, normed=True)
-                
-                try:
-                    evals, evecs = np.linalg.eigh(sub_L)
-                    fiedler = evecs[:, 1]
-                    split_mask = fiedler > 0
-                except Exception:
-                    split_mask = self.rng.rand(m) > 0.5
-
-                if 0 < np.sum(split_mask) < m:
-                    new_c_id = np.max(partition) + 1
-                    prop[nodes_c[split_mask]] = new_c_id
-                    _, prop = np.unique(prop, return_inverse=True)
-
-        elif move_type == "merge":
-            unique_clusters = np.unique(partition)
-            if len(unique_clusters) >= 2:
-                c1, c2 = self.rng.choice(unique_clusters, size=2, replace=False)
-                nodes_c1 = np.where(partition == c1)[0]
-                nodes_c2 = np.where(partition == c2)[0]
-                sub_W = W[np.ix_(nodes_c1, nodes_c2)]
-                if np.sum(sub_W) > 0:
-                    prop[nodes_c2] = c1
-                    _, prop = np.unique(prop, return_inverse=True)
-
-        return prop
-
     def compute_co_clustering_matrix(self) -> np.ndarray:
-        """
-        Compute posterior co-clustering matrix P_ij = P(nodes i and j in same cluster).
-        """
+        """Return posterior co-clustering probabilities from retained samples."""
         if not self.samples_:
-            raise RuntimeError("No MCMC samples available. Run `sample()` first.")
-
-        n_samples = len(self.samples_)
-        n_nodes = len(self.samples_[0])
-        P = np.zeros((n_nodes, n_nodes), dtype=np.float64)
-
+            raise RuntimeError("No MCMC samples available. Run sample() first.")
+        n = len(self.samples_[0])
+        P = np.zeros((n, n), dtype=np.float64)
         for sample in self.samples_:
-            eq_matrix = (sample[:, None] == sample[None, :]).astype(np.float64)
-            P += eq_matrix
-
-        P /= float(n_samples)
-        return P
+            P += (sample[:, None] == sample[None, :]).astype(np.float64)
+        return P / float(len(self.samples_))

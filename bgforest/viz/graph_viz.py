@@ -1,13 +1,14 @@
 """
 Matplotlib Graph Spanning Forest Plotters
 =========================================
-Visualizes data points, graph edge weights, and topological spanning forest 
+Visualizes data points, graph edge weights, and topological spanning forest
 trees overlaid on 2D embeddings.
 """
 
 from typing import Optional, Tuple
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree
 
 
@@ -17,7 +18,7 @@ def plot_spanning_forest(
     W: np.ndarray,
     title: str = "Bayesian Spanning Forest Graph Partitioning",
     figsize: Tuple[int, int] = (8, 6),
-    ax: Optional[plt.Axes] = None
+    ax: Optional[plt.Axes] = None,
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot 2D data points and overlaid minimum spanning trees for each cluster.
@@ -43,6 +44,7 @@ def plot_spanning_forest(
     """
     if X.shape[1] > 2:
         from sklearn.decomposition import PCA
+
         X = PCA(n_components=2).fit_transform(X)
 
     if ax is None:
@@ -60,9 +62,14 @@ def plot_spanning_forest(
 
         # Plot cluster points
         ax.scatter(
-            X[nodes, 0], X[nodes, 1],
-            c=[color], label=f"Cluster {cluster}",
-            s=40, edgecolors="k", linewidth=0.5, zorder=3
+            X[nodes, 0],
+            X[nodes, 1],
+            c=[color],
+            label=f"Cluster {cluster}",
+            s=40,
+            edgecolors="k",
+            linewidth=0.5,
+            zorder=3,
         )
 
         if len(nodes) > 1:
@@ -82,8 +89,12 @@ def plot_spanning_forest(
                         p1 = X[nodes[i_local]]
                         p2 = X[nodes[j_local]]
                         ax.plot(
-                            [p1[0], p2[0]], [p1[1], p2[1]],
-                            c=color, alpha=0.7, linewidth=1.5, zorder=2
+                            [p1[0], p2[0]],
+                            [p1[1], p2[1]],
+                            c=color,
+                            alpha=0.7,
+                            linewidth=1.5,
+                            zorder=2,
                         )
 
     ax.set_title(title, fontsize=13, fontweight="bold")

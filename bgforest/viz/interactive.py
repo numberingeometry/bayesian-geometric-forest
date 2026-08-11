@@ -1,11 +1,12 @@
 """
 Interactive Plotly Visualizers
 ==============================
-Generates interactive 2D/3D web-compatible graph figures, spanning forest 
+Generates interactive 2D/3D web-compatible graph figures, spanning forest
 tree animations, and single-cell RNA-seq uncertainty visualizers.
 """
 
-from typing import Optional, List, Dict
+from typing import List, Optional
+
 import numpy as np
 import plotly.graph_objects as go
 from scipy.sparse.csgraph import minimum_spanning_tree
@@ -16,7 +17,7 @@ def create_interactive_forest_plot(
     labels: np.ndarray,
     W: np.ndarray,
     proba: Optional[np.ndarray] = None,
-    title: str = "Bayesian Spanning Forest - Interactive Graph Visualizer"
+    title: str = "Bayesian Spanning Forest - Interactive Graph Visualizer",
 ) -> go.Figure:
     """
     Build interactive Plotly 2D scatter and spanning forest graph overlay.
@@ -41,6 +42,7 @@ def create_interactive_forest_plot(
     """
     if X.shape[1] > 2:
         from sklearn.decomposition import PCA
+
         X = PCA(n_components=2).fit_transform(X)
 
     fig = go.Figure()
@@ -49,8 +51,16 @@ def create_interactive_forest_plot(
 
     # Palette colors for clusters
     colors = [
-        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+        "#1f77b4",
+        "#ff7f0e",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+        "#7f7f7f",
+        "#bcbd22",
+        "#17becf",
     ]
 
     for idx, cluster in enumerate(unique_clusters):
@@ -75,14 +85,17 @@ def create_interactive_forest_plot(
                         edge_x.extend([p1[0], p2[0], None])
                         edge_y.extend([p1[1], p2[1], None])
 
-            fig.add_trace(go.Scatter(
-                x=edge_x, y=edge_y,
-                mode="lines",
-                line=dict(color=color, width=1.5),
-                opacity=0.6,
-                hoverinfo="none",
-                showlegend=False
-            ))
+            fig.add_trace(
+                go.Scatter(
+                    x=edge_x,
+                    y=edge_y,
+                    mode="lines",
+                    line=dict(color=color, width=1.5),
+                    opacity=0.6,
+                    hoverinfo="none",
+                    showlegend=False,
+                )
+            )
 
         # 2. Scatter nodes for this cluster
         hover_text = []
@@ -93,17 +106,17 @@ def create_interactive_forest_plot(
                 txt += f"<br><b>Posterior Prob:</b> {p_val:.3f}"
             hover_text.append(txt)
 
-        fig.add_trace(go.Scatter(
-            x=X[nodes, 0], y=X[nodes, 1],
-            mode="markers",
-            marker=dict(
-                size=10, color=color,
-                line=dict(width=1, color="black")
-            ),
-            name=f"Cluster {cluster}",
-            text=hover_text,
-            hoverinfo="text"
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=X[nodes, 0],
+                y=X[nodes, 1],
+                mode="markers",
+                marker=dict(size=10, color=color, line=dict(width=1, color="black")),
+                name=f"Cluster {cluster}",
+                text=hover_text,
+                hoverinfo="text",
+            )
+        )
 
     fig.update_layout(
         title=dict(text=title, font=dict(size=16, color="#111111")),
@@ -111,7 +124,7 @@ def create_interactive_forest_plot(
         yaxis=dict(title="Dimension 2", showgrid=True, gridcolor="#EAEAEA"),
         plot_bgcolor="white",
         legend=dict(x=0.01, y=0.99, bordercolor="#DDDDDD", borderwidth=1),
-        margin=dict(l=40, r=40, t=50, b=40)
+        margin=dict(l=40, r=40, t=50, b=40),
     )
 
     return fig
@@ -122,7 +135,7 @@ def create_interactive_scrna_visualizer(
     cell_labels: np.ndarray,
     cell_type_names: List[str],
     uncertainty_entropy: Optional[np.ndarray] = None,
-    title: str = "Single-Cell RNA-Seq Cell-Type Clustering & Bayesian Uncertainty"
+    title: str = "Single-Cell RNA-Seq Cell-Type Clustering & Bayesian Uncertainty",
 ) -> go.Figure:
     """
     Build interactive Plotly visualizer for scRNA-seq cell types and uncertainty.
@@ -164,14 +177,17 @@ def create_interactive_scrna_visualizer(
             sizes = 6 + 10 * (uncertainty_entropy[cells] / (np.max(uncertainty_entropy) + 1e-8))
             marker_dict["size"] = sizes
 
-        fig.add_trace(go.Scatter(
-            x=embedding[cells, 0], y=embedding[cells, 1],
-            mode="markers",
-            marker=marker_dict,
-            name=type_name,
-            text=hover_text,
-            hoverinfo="text"
-        ))
+        fig.add_trace(
+            go.Scatter(
+                x=embedding[cells, 0],
+                y=embedding[cells, 1],
+                mode="markers",
+                marker=marker_dict,
+                name=type_name,
+                text=hover_text,
+                hoverinfo="text",
+            )
+        )
 
     fig.update_layout(
         title=dict(text=title, font=dict(size=16, color="#111111")),
@@ -179,7 +195,7 @@ def create_interactive_scrna_visualizer(
         yaxis=dict(title="UMAP / PCA 2", showgrid=True, gridcolor="#EAEAEA"),
         plot_bgcolor="white",
         legend=dict(x=0.01, y=0.99, bordercolor="#DDDDDD", borderwidth=1),
-        margin=dict(l=40, r=40, t=50, b=40)
+        margin=dict(l=40, r=40, t=50, b=40),
     )
 
     return fig

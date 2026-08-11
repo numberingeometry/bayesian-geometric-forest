@@ -3,12 +3,12 @@ Unit Tests for Graph Construction and Laplacians
 """
 
 import numpy as np
-import pytest
+
 from bgforest.core.graph import (
-    compute_pairwise_distances,
-    build_rbf_similarity,
     build_knn_similarity,
+    build_rbf_similarity,
     compute_laplacian,
+    compute_pairwise_distances,
     extract_cluster_submatrix,
 )
 
@@ -50,11 +50,7 @@ def test_build_knn_similarity():
 
 
 def test_compute_laplacian():
-    W = np.array([
-        [0.0, 1.0, 2.0],
-        [1.0, 0.0, 1.0],
-        [2.0, 1.0, 0.0]
-    ])
+    W = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
     L = compute_laplacian(W, normed=False)
     # Row sums of unnormalized Laplacian must be zero
     assert np.allclose(np.sum(L, axis=1), 0.0)

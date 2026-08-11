@@ -3,6 +3,7 @@ Unit tests for Bayesian Spanning Tree feature dependence backbone estimator.
 """
 
 import numpy as np
+
 from bgforest.models.bst import BayesianSpanningTree
 
 

@@ -3,10 +3,10 @@ Unit Tests for MCMC Sampler and Convergence Diagnostics
 """
 
 import numpy as np
-import pytest
+
 from bgforest.core.graph import build_rbf_similarity
+from bgforest.mcmc.diagnostics import compute_effective_sample_size, compute_gelman_rubin_rhat
 from bgforest.mcmc.sampler import BSFMCMCSampler
-from bgforest.mcmc.diagnostics import compute_gelman_rubin_rhat, compute_effective_sample_size
 
 
 def test_bsf_mcmc_sampler():

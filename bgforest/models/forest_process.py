@@ -1,14 +1,17 @@
 """
 Forest Process Prior Model
 ==========================
-Implements the Forest Process prior distribution P(C | alpha, beta, theta) 
+Implements the Forest Process prior distribution P(C | alpha, beta, theta)
 as an urn process extension to similarity graphs (Duan & Roy, 2022/2023).
 """
 
-from typing import Optional
 import numpy as np
 from scipy.special import gammaln
-from bgforest.core.matrix_tree import compute_forest_log_spanning_trees, compute_cluster_log_spanning_trees
+
+from bgforest.core.matrix_tree import (
+    compute_cluster_log_spanning_trees,
+    compute_forest_log_spanning_trees,
+)
 
 
 class ForestProcess:
@@ -28,11 +31,7 @@ class ForestProcess:
     """
 
     def __init__(
-        self,
-        alpha: float = 1.0,
-        beta: float = 0.0,
-        theta: float = 0.1,
-        size_weight: float = 0.05
+        self, alpha: float = 1.0, beta: float = 0.0, theta: float = 0.1, size_weight: float = 0.05
     ):
         if alpha <= 0:
             raise ValueError("alpha concentration parameter must be strictly positive.")
@@ -82,7 +81,7 @@ class ForestProcess:
 
         log_alpha = np.log(self.alpha)
         log_size = self.size_weight * float(gammaln(size - self.beta))
-        
+
         if self.theta > 0:
             log_tau = compute_cluster_log_spanning_trees(W, indices)
             if np.isneginf(log_tau):

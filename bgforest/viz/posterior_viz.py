@@ -1,13 +1,14 @@
 """
 Posterior Co-Clustering & MCMC Diagnostic Visualizers
 =====================================================
-Routines for plotting reordered co-clustering heatmaps, MCMC log-posterior 
+Routines for plotting reordered co-clustering heatmaps, MCMC log-posterior
 convergence traces, and spectral eigenvector embeddings.
 """
 
-from typing import Optional, Tuple, List
-import numpy as np
+from typing import List, Optional, Tuple
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_co_clustering_matrix(
@@ -15,7 +16,7 @@ def plot_co_clustering_matrix(
     labels: Optional[np.ndarray] = None,
     title: str = "Posterior Co-Clustering Matrix P_ij",
     figsize: Tuple[int, int] = (7, 6),
-    cmap: str = "viridis"
+    cmap: str = "viridis",
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot reordered posterior co-clustering matrix P_ij.
@@ -60,7 +61,7 @@ def plot_mcmc_trace(
     trace: List[float],
     burn_in: int = 0,
     title: str = "MCMC Log-Posterior Convergence Trace",
-    figsize: Tuple[int, int] = (8, 4)
+    figsize: Tuple[int, int] = (8, 4),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot MCMC log-posterior trace with burn-in line and rolling average.
@@ -90,8 +91,11 @@ def plot_mcmc_trace(
     if len(trace) >= window:
         moving_avg = np.convolve(trace, np.ones(window) / window, mode="valid")
         ax.plot(
-            iters[window - 1:], moving_avg,
-            color="#d62728", linewidth=2.0, label=f"Moving Avg (w={window})"
+            iters[window - 1 :],
+            moving_avg,
+            color="#d62728",
+            linewidth=2.0,
+            label=f"Moving Avg (w={window})",
         )
 
     if burn_in > 0:
@@ -111,7 +115,7 @@ def plot_spectral_eigenvectors(
     eigenvectors: np.ndarray,
     labels: np.ndarray,
     title: str = "Leading Eigenvector Embedding of Posterior Matrix P",
-    figsize: Tuple[int, int] = (7, 5)
+    figsize: Tuple[int, int] = (7, 5),
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Plot 2D scatter of leading eigenvectors extracted from posterior matrix P.
@@ -125,9 +129,14 @@ def plot_spectral_eigenvectors(
     for idx, cluster in enumerate(unique_labels):
         nodes = np.where(labels == cluster)[0]
         ax.scatter(
-            eigenvectors[nodes, 0], eigenvectors[nodes, 1],
-            c=[cmap(idx)], label=f"Cluster {cluster}",
-            s=40, edgecolors="k", linewidth=0.5, alpha=0.9
+            eigenvectors[nodes, 0],
+            eigenvectors[nodes, 1],
+            c=[cmap(idx)],
+            label=f"Cluster {cluster}",
+            s=40,
+            edgecolors="k",
+            linewidth=0.5,
+            alpha=0.9,
         )
 
     ax.set_title(title, fontsize=13, fontweight="bold")

@@ -3,8 +3,9 @@ Unit tests for Bayesian Distance Clustering estimator.
 """
 
 import numpy as np
-from bgforest.models.distance_clustering import BayesianDistanceClustering
+
 from bgforest.datasets.synthetic import make_anisotropic_blobs
+from bgforest.models.distance_clustering import BayesianDistanceClustering
 
 
 def test_bayesian_distance_clustering():

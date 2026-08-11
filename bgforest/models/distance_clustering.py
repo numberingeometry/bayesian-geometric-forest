@@ -1,20 +1,23 @@
 """
 Bayesian Distance Clustering (Duan & Dunson, 2021, JMLR)
 =========================================================
-Implements non-parametric Bayesian clustering based directly on pairwise 
+Implements non-parametric Bayesian clustering based directly on pairwise
 distance matrices D_ij without distributional/shape assumptions on raw coordinates.
 """
 
-from typing import List, Tuple, Dict, Any, Optional, Union
+from typing import Optional, Union
+
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
-from scipy.sparse.csgraph import minimum_spanning_tree
-from bgforest.mcmc.sampler import BSFMCMCSampler
+from sklearn.cluster import KMeans
 
 
 class BayesianDistanceClustering:
     """
-    Bayesian Distance Clustering Estimator.
+    Experimental distance-only clustering estimator.
+
+    This lightweight pairwise-distance prototype is not a complete
+    reproduction of the integrated Bayesian Distance Clustering sampler.
 
     Parameters
     ----------
@@ -36,7 +39,7 @@ class BayesianDistanceClustering:
         n_iter: int = 300,
         burn_in: int = 100,
         metric: str = "euclidean",
-        random_state: Optional[Union[int, np.random.RandomState]] = None
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
     ):
         self.n_clusters = int(n_clusters)
         self.n_iter = int(n_iter)
@@ -49,20 +52,23 @@ class BayesianDistanceClustering:
         else:
             self.rng = np.random.RandomState(random_state)
 
-        self.labels_ : Optional[np.ndarray] = None
-        self.distance_matrix_ : Optional[np.ndarray] = None
-        self.co_clustering_matrix_ : Optional[np.ndarray] = None
+        self.labels_: Optional[np.ndarray] = None
+        self.distance_matrix_: Optional[np.ndarray] = None
+        self.co_clustering_matrix_: Optional[np.ndarray] = None
 
-    def compute_distance_log_likelihood(
-        self,
-        D: np.ndarray,
-        partition: np.ndarray
-    ) -> float:
+        if self.n_clusters < 1:
+            raise ValueError("n_clusters must be at least 1.")
+        if self.n_iter < 1:
+            raise ValueError("n_iter must be at least 1.")
+        if self.burn_in < 0:
+            raise ValueError("burn_in must be non-negative.")
+
+    def compute_distance_log_likelihood(self, D: np.ndarray, partition: np.ndarray) -> float:
         """
         Compute marginal log-likelihood P(D | C) over pairwise distances.
         """
         n = D.shape[0]
-        same_mask = (partition[:, None] == partition[None, :])
+        same_mask = partition[:, None] == partition[None, :]
         diff_mask = ~same_mask
 
         # Extract intra-cluster and inter-cluster distances
@@ -95,7 +101,11 @@ class BayesianDistanceClustering:
         self : BayesianDistanceClustering
         """
         X = np.asarray(X, dtype=np.float64)
+        if X.ndim != 2 or X.shape[0] == 0 or not np.all(np.isfinite(X)):
+            raise ValueError("X must be a non-empty 2D array containing finite values.")
         n = X.shape[0]
+        if not 1 <= self.n_clusters <= n:
+            raise ValueError("n_clusters must be between 1 and n_samples.")
 
         if X.shape[0] == X.shape[1] and np.allclose(X, X.T) and np.all(np.diag(X) == 0.0):
             D = np.copy(X)
@@ -106,15 +116,17 @@ class BayesianDistanceClustering:
 
         # Build similarity W from distance D for MCMC proposals
         sigma = np.median(D[D > 0]) if np.any(D > 0) else 1.0
-        W = np.exp(- (D ** 2) / (2.0 * (sigma ** 2)))
+        W = np.exp(-(D**2) / (2.0 * (sigma**2)))
         np.fill_diagonal(W, 0.0)
 
         # Initial partition via Spectral Clustering on W
         from sklearn.cluster import SpectralClustering
+
         try:
             sc = SpectralClustering(
-                n_clusters=self.n_clusters, affinity="precomputed",
-                random_state=self.rng.randint(0, 10000)
+                n_clusters=self.n_clusters,
+                affinity="precomputed",
+                random_state=self.rng.randint(0, 10000),
             )
             curr_partition = sc.fit_predict(W)
         except Exception:
@@ -123,6 +135,7 @@ class BayesianDistanceClustering:
         curr_log_lik = self.compute_distance_log_likelihood(D, curr_partition)
 
         samples = []
+        effective_burn_in = min(self.burn_in, self.n_iter - 1)
         for it in range(self.n_iter):
             # Propose relocate move
             node = self.rng.randint(0, n)
@@ -145,7 +158,7 @@ class BayesianDistanceClustering:
                             curr_partition = prop
                             curr_log_lik = prop_log_lik
 
-            if it >= self.burn_in:
+            if it >= effective_burn_in:
                 samples.append(np.copy(curr_partition))
 
         # Compute co-clustering matrix and final labels
@@ -156,11 +169,14 @@ class BayesianDistanceClustering:
 
         self.co_clustering_matrix_ = P
 
-        sc_final = SpectralClustering(
-            n_clusters=self.n_clusters, affinity="precomputed",
-            random_state=self.random_state
-        )
-        self.labels_ = sc_final.fit_predict(P)
+        if self.n_clusters == 1:
+            self.labels_ = np.zeros(n, dtype=np.int64)
+        else:
+            eigenvalues, eigenvectors = np.linalg.eigh(P)
+            embedding = eigenvectors[:, np.argsort(eigenvalues)[::-1][: self.n_clusters]]
+            self.labels_ = KMeans(
+                n_clusters=self.n_clusters, n_init=10, random_state=self.random_state
+            ).fit_predict(embedding)
         return self
 
     def fit_predict(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:

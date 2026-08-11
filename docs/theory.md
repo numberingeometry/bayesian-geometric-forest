@@ -1,4 +1,9 @@
-# Theoretical Foundations & Mathematical Proofs
+# Theoretical foundations and implementation notes
+
+This page is a concise mathematical orientation to the methods that motivate
+the package; it is not a replacement for the proofs in the cited papers. The
+current production sampler targets the posterior conditional on a fixed number
+of clusters. The distance-only prototype remains experimental.
 
 ## 1. Introduction & Problem Formulation
 

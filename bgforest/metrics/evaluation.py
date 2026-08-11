@@ -1,19 +1,19 @@
 """
 Clustering Evaluation and Uncertainty Metrics
 =============================================
-Provides quantitative metrics including Adjusted Rand Index (ARI), 
-Normalized Mutual Information (NMI), point-wise Bayesian assignment entropy, 
+Provides quantitative metrics including Adjusted Rand Index (ARI),
+Normalized Mutual Information (NMI), point-wise Bayesian assignment entropy,
 and empirical bounds on misclassification rate (Zheng, Duan & Roy, 2024).
 """
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Tuple
+
 import numpy as np
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 
 
 def compute_clustering_metrics(
-    labels_true: np.ndarray,
-    labels_pred: np.ndarray
+    labels_true: np.ndarray, labels_pred: np.ndarray
 ) -> Dict[str, float]:
     """
     Compute standard external clustering benchmark metrics.
@@ -36,10 +36,7 @@ def compute_clustering_metrics(
     ari = float(adjusted_rand_score(labels_true, labels_pred))
     nmi = float(normalized_mutual_info_score(labels_true, labels_pred))
 
-    return {
-        "ARI": ari,
-        "NMI": nmi
-    }
+    return {"ARI": ari, "NMI": nmi}
 
 
 def compute_uncertainty_entropy(proba: np.ndarray) -> np.ndarray:
@@ -66,10 +63,7 @@ def compute_uncertainty_entropy(proba: np.ndarray) -> np.ndarray:
 
 
 def compute_misclassification_bound(
-    X: np.ndarray,
-    labels_true: np.ndarray,
-    labels_pred: np.ndarray,
-    sigma: float = 1.0
+    X: np.ndarray, labels_true: np.ndarray, labels_pred: np.ndarray, sigma: float = 1.0
 ) -> Tuple[float, float]:
     """
     Compute empirical misclassification rate and theoretical upper bound (Zheng, Duan & Roy, 2024).
@@ -116,14 +110,15 @@ def compute_misclassification_bound(
     for t in unique_t:
         idx = np.where(labels_true == t)[0]
         centroids.append(np.mean(X[idx], axis=0))
-    
+
     centroids = np.array(centroids)
     if len(centroids) >= 2:
         from scipy.spatial.distance import pdist
+
         min_dist = np.min(pdist(centroids))
     else:
         min_dist = 1.0
 
-    bound_estimate = float(np.exp(-(min_dist ** 2) / (8.0 * (sigma ** 2))))
+    bound_estimate = float(np.exp(-(min_dist**2) / (8.0 * (sigma**2))))
 
     return float(empirical_error), bound_estimate
