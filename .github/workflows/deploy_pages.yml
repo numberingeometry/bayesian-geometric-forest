@@ -48,11 +48,14 @@ jobs:
           python examples/06_distance_clustering.py
           python examples/07_semi_supervised_bsf.py
           python examples/08_central_visualizer.py
+          mkdir -p docs/figs
+          cp -r figs/* docs/figs/
 
       - name: Build MkDocs Documentation Site
         run: |
           mkdocs build -d site
-          cp -r figs site/figs
+          mkdir -p site/figs
+          cp -r figs/* site/figs/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
