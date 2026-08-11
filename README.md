@@ -6,6 +6,8 @@ Graph-based Bayesian clustering, uncertainty summaries, feature-dependence trees
 
 ![Bayesian Spanning Forest partitions on nonlinear synthetic data](figs/synthetic_benchmark_results.png)
 
+![An animated Bayesian Geometric Forest fit: observations, similarity graph, spanning forest, and posterior co-clustering](figs/bayesian_geometric_forest_process.gif)
+
 ## What is here
 
 `bgforest` is built around weighted similarity graphs. The primary `BayesianSpanningForest` estimator combines a Forest Process prior, Matrix-Tree partition terms, and a fixed-`K` Gibbs sampler to produce a partition and posterior co-clustering matrix.
@@ -55,7 +57,7 @@ tree_edges = WilsonLERWSampler(42).sample_spanning_tree(tree_model.W_feature_)
 | --- | --- |
 | ![Posterior co-clustering matrix](figs/scrna_co_clustering_matrix.png) | ![BST backbone network](figs/bst_backbone_network.png) |
 
-The gallery and interactive views are reproducible from the numbered scripts in [`examples/`](examples/). The GitHub Pages workflow regenerates them before deployment.
+The gallery, animation, and interactive views are reproducible from the numbered scripts in [`examples/`](examples/). The GitHub Pages workflow regenerates them before deployment.
 
 ## Important modeling notes
 

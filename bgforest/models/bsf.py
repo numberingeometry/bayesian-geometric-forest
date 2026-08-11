@@ -189,6 +189,7 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
             sigma_likelihood=self.sigma_likelihood,
             random_state=self.random_state,
         )
+        self.mcmc_sampler_ = sampler
 
         # Initialize partition if not explicitly supplied
         if initial_partition is not None:
