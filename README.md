@@ -56,7 +56,7 @@ model.assignment_uncertainty()   # per-point uncertainty
 model.forests_                   # every retained forest, as parent pointers
 ```
 
-This takes about ten seconds on a laptop ([`examples/01_quickstart.py`](examples/01_quickstart.py)).
+This takes about ten seconds ([`examples/01_quickstart.py`](examples/01_quickstart.py)).
 Isolated points are trees of their own, which is why the posterior over $K$ has mass
 above 2.
 
@@ -117,7 +117,9 @@ Every check below compares fast code with an independent brute-force answer: all
 $N^{N-2}$ labelled trees of the augmented graph, or all set partitions. Exact identities
 are held to $10^{-10}$; sampling checks are chi-square tests at $\alpha = 0.001$ with fixed
 seeds. `python scripts/verify_exactness.py` reproduces the table, and CI runs it on every
-push.
+push. The checks cover everything that holds for a given kernel; the adaptive-scale updates
+are the paper's conjugate conditionals transcribed, and are not covered by them (inspect the
+chain traces, or run several seeds).
 
 <!-- verification:start -->
 | Check | Method | Result | |
