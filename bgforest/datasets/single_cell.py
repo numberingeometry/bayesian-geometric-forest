@@ -86,49 +86,6 @@ def simulate_scrna_data(
     return counts, cell_labels, names
 
 
-def load_real_scrna_benchmark(
-    n_cells: int = 500, n_genes: int = 600, random_state: Optional[int] = None
-) -> Tuple[np.ndarray, np.ndarray, List[str]]:
-    """
-    Load realistic benchmark dataset modeling PBMC 3k cell types (CD4 T cells,
-    CD14+ Monocytes, B cells, FCGR3A+ Monocytes, NK cells, CD8 T cells, Dendritic).
-
-    Parameters
-    ----------
-    n_cells : int, default=500
-        Number of cells to sample.
-    n_genes : int, default=600
-        Number of genes measured per cell.
-    random_state : int, optional
-        Seed for reproducibility.
-
-    Returns
-    -------
-    counts : np.ndarray of shape (n_cells, n_genes)
-        Single-cell count expression matrix.
-    cell_labels : np.ndarray of shape (n_cells,)
-        Cell-type cluster assignment indices.
-    cell_type_names : List[str]
-        Biological cell-type names.
-    """
-    pbmc_names = [
-        "CD4+ T-Cell",
-        "CD14+ Monocyte",
-        "B-Cell",
-        "CD8+ T-Cell",
-        "NK-Cell",
-        "FCGR3A+ Monocyte",
-    ]
-    return simulate_scrna_data(
-        n_cells=n_cells,
-        n_genes=n_genes,
-        n_cell_types=len(pbmc_names),
-        cell_type_names=pbmc_names,
-        dropout_rate=0.25,
-        random_state=random_state,
-    )
-
-
 def preprocess_scrna_data(
     counts: np.ndarray,
     n_hvg: int = 200,
