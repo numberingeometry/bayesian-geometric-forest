@@ -66,18 +66,22 @@ def test_lambda_moves_the_number_of_clusters():
     assert small_kernel(6, lam=5.0).expected_n_clusters() > small_kernel(6, lam=0.05).expected_n_clusters()
 
 
+def _trapezoid(y, x):
+    return float(np.sum((y[1:] + y[:-1]) * np.diff(x)) / 2)
+
+
 def test_densities_are_normalised():
     # Gaussian leaf: integrate over a grid in 1D.
     grid = np.linspace(-12, 12, 4001)[:, None]
     X = np.vstack([[0.3], grid])
     s = np.full(X.shape[0], 0.8)
     log_f = gaussian_leaf_logweights(X, s)[0, 1:]
-    assert np.isclose(np.trapezoid(np.exp(log_f), grid[:, 0]), 1.0, atol=1e-6)
+    assert np.isclose(_trapezoid(np.exp(log_f), grid[:, 0]), 1.0, atol=1e-6)
     # Cauchy root in 2D: radial integral.
     r = np.linspace(0, 4000, 400001)
     pts = np.c_[r, np.zeros_like(r)]
     dens = np.exp(cauchy_root_logdensity(pts, rho=1.3))
-    assert np.isclose(np.trapezoid(2 * np.pi * r * dens, r), 1.0, atol=1e-3)
+    assert np.isclose(_trapezoid(2 * np.pi * r * dens, r), 1.0, atol=1e-3)
 
 
 def test_kernel_validation():

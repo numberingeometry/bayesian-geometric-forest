@@ -1,21 +1,50 @@
-site_name: Bayesian Geometric Forest
-site_description: Bayesian Spanning Forest and Forest Process for Robust Graphical Model-Based Spectral Clustering
+site_name: bayesian-geometric-forest
+site_description: Bayesian spanning forest clustering with exact posterior tree draws, closed-form edge probabilities and brute-force verification.
 site_author: Bobby Zhang
+site_url: https://numberingeometry.github.io/bayesian-geometric-forest/
 repo_url: https://github.com/numberingeometry/bayesian-geometric-forest
+repo_name: numberingeometry/bayesian-geometric-forest
 
 theme:
-  name: readthedocs
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
 
 plugins:
   - search
 
 markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
+  - pymdownx.highlight
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
 
 nav:
   - Overview: index.md
-  - Theory & Mathematics: theory.md
+  - Model and math: theory.md
+  - Verification: verification.md
+  - API: api.md
+  - Interactive explorer: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/

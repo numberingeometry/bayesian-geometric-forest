@@ -1,0 +1,181 @@
+dataset,method,seed,ari
+Two moons,k-means,0,0.4337
+Two moons,Gaussian mixture,0,0.4697
+Two moons,Spectral (k-NN graph),0,0.8707
+Two moons,MST cut (single linkage),0,1.0000
+Two moons,"BSF, K given",0,0.9867
+Two moons,"BSF, K inferred",0,0.9867
+Moons + 5% outliers,k-means,0,0.4956
+Moons + 5% outliers,Gaussian mixture,0,0.4956
+Moons + 5% outliers,Spectral (k-NN graph),0,0.3666
+Moons + 5% outliers,MST cut (single linkage),0,0.0000
+Moons + 5% outliers,"BSF, K given",0,0.9860
+Moons + 5% outliers,"BSF, K inferred",0,0.5349
+Circles,k-means,0,-0.0030
+Circles,Gaussian mixture,0,-0.0033
+Circles,Spectral (k-NN graph),0,1.0000
+Circles,MST cut (single linkage),0,1.0000
+Circles,"BSF, K given",0,1.0000
+Circles,"BSF, K inferred",0,1.0000
+Stretched blobs,k-means,0,0.5126
+Stretched blobs,Gaussian mixture,0,0.9029
+Stretched blobs,Spectral (k-NN graph),0,0.3884
+Stretched blobs,MST cut (single linkage),0,0.0002
+Stretched blobs,"BSF, K given",0,0.4476
+Stretched blobs,"BSF, K inferred",0,0.0000
+Spirals,k-means,0,0.1315
+Spirals,Gaussian mixture,0,0.1365
+Spirals,Spectral (k-NN graph),0,1.0000
+Spirals,MST cut (single linkage),0,1.0000
+Spirals,"BSF, K given",0,1.0000
+Spirals,"BSF, K inferred",0,0.6157
+Iris (real),k-means,0,0.6201
+Iris (real),Gaussian mixture,0,0.9039
+Iris (real),Spectral (k-NN graph),0,0.4757
+Iris (real),MST cut (single linkage),0,0.5584
+Iris (real),"BSF, K given",0,0.5584
+Iris (real),"BSF, K inferred",0,0.5584
+Two moons,k-means,1,0.4249
+Two moons,Gaussian mixture,1,0.4337
+Two moons,Spectral (k-NN graph),1,0.7855
+Two moons,MST cut (single linkage),1,1.0000
+Two moons,"BSF, K given",1,0.9867
+Two moons,"BSF, K inferred",1,0.9867
+Moons + 5% outliers,k-means,1,0.4567
+Moons + 5% outliers,Gaussian mixture,1,0.4567
+Moons + 5% outliers,Spectral (k-NN graph),1,0.5570
+Moons + 5% outliers,MST cut (single linkage),1,0.0000
+Moons + 5% outliers,"BSF, K given",1,1.0000
+Moons + 5% outliers,"BSF, K inferred",1,0.4567
+Circles,k-means,1,-0.0033
+Circles,Gaussian mixture,1,-0.0032
+Circles,Spectral (k-NN graph),1,1.0000
+Circles,MST cut (single linkage),1,1.0000
+Circles,"BSF, K given",1,1.0000
+Circles,"BSF, K inferred",1,1.0000
+Stretched blobs,k-means,1,0.4509
+Stretched blobs,Gaussian mixture,1,0.8841
+Stretched blobs,Spectral (k-NN graph),1,0.5064
+Stretched blobs,MST cut (single linkage),1,0.0005
+Stretched blobs,"BSF, K given",1,0.7998
+Stretched blobs,"BSF, K inferred",1,0.4332
+Spirals,k-means,1,0.0716
+Spirals,Gaussian mixture,1,0.0869
+Spirals,Spectral (k-NN graph),1,0.4079
+Spirals,MST cut (single linkage),1,1.0000
+Spirals,"BSF, K given",1,1.0000
+Spirals,"BSF, K inferred",1,0.5422
+Iris (real),k-means,1,0.6201
+Iris (real),Gaussian mixture,1,0.9039
+Iris (real),Spectral (k-NN graph),1,0.4757
+Iris (real),MST cut (single linkage),1,0.5584
+Iris (real),"BSF, K given",1,0.5584
+Iris (real),"BSF, K inferred",1,0.5584
+Two moons,k-means,2,0.4515
+Two moons,Gaussian mixture,2,0.4515
+Two moons,Spectral (k-NN graph),2,0.6823
+Two moons,MST cut (single linkage),2,1.0000
+Two moons,"BSF, K given",2,1.0000
+Two moons,"BSF, K inferred",2,1.0000
+Moons + 5% outliers,k-means,2,0.4956
+Moons + 5% outliers,Gaussian mixture,2,0.5157
+Moons + 5% outliers,Spectral (k-NN graph),2,0.4102
+Moons + 5% outliers,MST cut (single linkage),2,0.0000
+Moons + 5% outliers,"BSF, K given",2,1.0000
+Moons + 5% outliers,"BSF, K inferred",2,0.5011
+Circles,k-means,2,-0.0034
+Circles,Gaussian mixture,2,-0.0033
+Circles,Spectral (k-NN graph),2,1.0000
+Circles,MST cut (single linkage),2,1.0000
+Circles,"BSF, K given",2,1.0000
+Circles,"BSF, K inferred",2,1.0000
+Stretched blobs,k-means,2,0.4152
+Stretched blobs,Gaussian mixture,2,0.5906
+Stretched blobs,Spectral (k-NN graph),2,0.2625
+Stretched blobs,MST cut (single linkage),2,0.0000
+Stretched blobs,"BSF, K given",2,0.4010
+Stretched blobs,"BSF, K inferred",2,0.0000
+Spirals,k-means,2,0.0791
+Spirals,Gaussian mixture,2,0.0791
+Spirals,Spectral (k-NN graph),2,1.0000
+Spirals,MST cut (single linkage),2,1.0000
+Spirals,"BSF, K given",2,1.0000
+Spirals,"BSF, K inferred",2,0.5428
+Iris (real),k-means,2,0.6201
+Iris (real),Gaussian mixture,2,0.9039
+Iris (real),Spectral (k-NN graph),2,0.4757
+Iris (real),MST cut (single linkage),2,0.5584
+Iris (real),"BSF, K given",2,0.6423
+Iris (real),"BSF, K inferred",2,0.6423
+Two moons,k-means,3,0.4515
+Two moons,Gaussian mixture,3,0.4790
+Two moons,Spectral (k-NN graph),3,0.5461
+Two moons,MST cut (single linkage),3,1.0000
+Two moons,"BSF, K given",3,0.9734
+Two moons,"BSF, K inferred",3,0.9734
+Moons + 5% outliers,k-means,3,0.5056
+Moons + 5% outliers,Gaussian mixture,3,0.5157
+Moons + 5% outliers,Spectral (k-NN graph),3,0.7873
+Moons + 5% outliers,MST cut (single linkage),3,0.0000
+Moons + 5% outliers,"BSF, K given",3,1.0000
+Moons + 5% outliers,"BSF, K inferred",3,0.6278
+Circles,k-means,3,-0.0033
+Circles,Gaussian mixture,3,-0.0034
+Circles,Spectral (k-NN graph),3,1.0000
+Circles,MST cut (single linkage),3,1.0000
+Circles,"BSF, K given",3,1.0000
+Circles,"BSF, K inferred",3,1.0000
+Stretched blobs,k-means,3,0.4183
+Stretched blobs,Gaussian mixture,3,0.9604
+Stretched blobs,Spectral (k-NN graph),3,0.5440
+Stretched blobs,MST cut (single linkage),3,0.0000
+Stretched blobs,"BSF, K given",3,0.4473
+Stretched blobs,"BSF, K inferred",3,0.0000
+Spirals,k-means,3,0.0368
+Spirals,Gaussian mixture,3,0.0544
+Spirals,Spectral (k-NN graph),3,0.7974
+Spirals,MST cut (single linkage),3,1.0000
+Spirals,"BSF, K given",3,1.0000
+Spirals,"BSF, K inferred",3,0.5025
+Iris (real),k-means,3,0.6201
+Iris (real),Gaussian mixture,3,0.9039
+Iris (real),Spectral (k-NN graph),3,0.4757
+Iris (real),MST cut (single linkage),3,0.5584
+Iris (real),"BSF, K given",3,0.6663
+Iris (real),"BSF, K inferred",3,0.5438
+Two moons,k-means,4,0.4977
+Two moons,Gaussian mixture,4,0.4977
+Two moons,Spectral (k-NN graph),4,1.0000
+Two moons,MST cut (single linkage),4,1.0000
+Two moons,"BSF, K given",4,1.0000
+Two moons,"BSF, K inferred",4,1.0000
+Moons + 5% outliers,k-means,4,0.4857
+Moons + 5% outliers,Gaussian mixture,4,0.5056
+Moons + 5% outliers,Spectral (k-NN graph),4,0.7022
+Moons + 5% outliers,MST cut (single linkage),4,0.0000
+Moons + 5% outliers,"BSF, K given",4,0.9720
+Moons + 5% outliers,"BSF, K inferred",4,0.6451
+Circles,k-means,4,-0.0034
+Circles,Gaussian mixture,4,-0.0017
+Circles,Spectral (k-NN graph),4,1.0000
+Circles,MST cut (single linkage),4,1.0000
+Circles,"BSF, K given",4,1.0000
+Circles,"BSF, K inferred",4,1.0000
+Stretched blobs,k-means,4,0.4135
+Stretched blobs,Gaussian mixture,4,0.9414
+Stretched blobs,Spectral (k-NN graph),4,0.5839
+Stretched blobs,MST cut (single linkage),4,0.0002
+Stretched blobs,"BSF, K given",4,0.5457
+Stretched blobs,"BSF, K inferred",4,0.0000
+Spirals,k-means,4,0.0830
+Spirals,Gaussian mixture,4,0.0869
+Spirals,Spectral (k-NN graph),4,1.0000
+Spirals,MST cut (single linkage),4,1.0000
+Spirals,"BSF, K given",4,1.0000
+Spirals,"BSF, K inferred",4,0.4448
+Iris (real),k-means,4,0.6101
+Iris (real),Gaussian mixture,4,0.9039
+Iris (real),Spectral (k-NN graph),4,0.4757
+Iris (real),MST cut (single linkage),4,0.5584
+Iris (real),"BSF, K given",4,0.5948
+Iris (real),"BSF, K inferred",4,0.5948

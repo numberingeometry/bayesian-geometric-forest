@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forest Posterior Explorer</title>
+<meta name="description" content="Step through exact posterior draws of a Bayesian spanning forest and see clustering uncertainty point by point.">
+<style>
+:root {
+  --bg: #ffffff; --panel: #f8fafc; --ink: #0f172a; --muted: #64748b; --line: #e2e8f0;
+  --accent: #2563eb; --edge-alpha: 0.85;
+  --c0: #2563eb; --c1: #e11d48; --c2: #059669; --c3: #d97706; --c4: #7c3aed; --c5: #0891b2; --cx: #94a3b8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937;
+    --accent: #60a5fa; --c0: #60a5fa; --c1: #fb7185; --c2: #34d399; --c3: #fbbf24; --c4: #a78bfa; --c5: #22d3ee; --cx: #64748b;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937;
+  --accent: #60a5fa; --c0: #60a5fa; --c1: #fb7185; --c2: #34d399; --c3: #fbbf24; --c4: #a78bfa; --c5: #22d3ee; --cx: #64748b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.5 Inter, "Helvetica Neue", Arial, system-ui, sans-serif; }
+header { max-width: 1120px; margin: 0 auto; padding: 28px 16px 8px; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--muted); max-width: 760px; }
+main { max-width: 1120px; margin: 0 auto; padding: 12px 16px 40px; display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+.tabs, .modes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+svg#plot { width: 100%; height: auto; display: block; touch-action: manipulation; }
+.controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.controls input[type=range] { flex: 1; accent-color: var(--accent); }
+.status { color: var(--muted); font-size: 13px; min-height: 20px; margin-top: 6px; }
+aside { display: flex; flex-direction: column; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; }
+.card p { margin: 0 0 8px; font-size: 14px; }
+.bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; }
+.bar { flex: 1; background: var(--accent); opacity: 0.85; border-radius: 3px 3px 0 0; min-height: 1px; position: relative; }
+.bar.on { opacity: 1; outline: 2px solid var(--ink); }
+.barlabels { display: flex; gap: 4px; font-size: 11px; color: var(--muted); }
+.barlabels span { flex: 1; text-align: center; }
+.legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.ramp { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #fde7c3, #f9845b, #b5367a, #3b0f70, #000004); }
+a { color: var(--accent); }
+footer { max-width: 1120px; margin: 0 auto; padding: 0 16px 32px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Forest Posterior Explorer</h1>
+  <p>Each cluster is a tree. Every frame below is one posterior draw of the whole forest under the
+  Bayesian spanning forest model (Duan &amp; Roy, JASA 2024): given the kernel scales, the forest is
+  drawn <strong>exactly</strong> with Wilson's algorithm, and the scales are updated by Gibbs sampling.
+  Click any point to see how often each other point shares its cluster.</p>
+</header>
+<main>
+  <section>
+    <div class="tabs" id="tabs" role="group" aria-label="Dataset"></div>
+    <div class="modes" id="modes" role="group" aria-label="View">
+      <button data-mode="draws" aria-pressed="true">Posterior draws</button>
+      <button data-mode="cocluster" aria-pressed="false">Co-clustering with a point</button>
+      <button data-mode="uncertainty" aria-pressed="false">Assignment uncertainty</button>
+    </div>
+    <div class="stage"><svg id="plot" viewBox="0 0 760 460" role="img" aria-label="Scatter plot of the data with posterior forest"></svg></div>
+    <div class="controls">
+      <button id="play" aria-label="Play or pause">Pause</button>
+      <input id="slider" type="range" min="0" max="0" value="0" aria-label="Posterior draw">
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+  <aside>
+    <div class="card">
+      <h2>Posterior over K</h2>
+      <div class="bars" id="bars"></div>
+      <div class="barlabels" id="barlabels"></div>
+      <p class="status" id="kinfo"></p>
+    </div>
+    <div class="card" id="explain"></div>
+    <div class="card">
+      <h2>Colour scale</h2>
+      <div class="legend"><span id="lo">0</span><div class="ramp"></div><span id="hi">1</span></div>
+    </div>
+  </aside>
+</main>
+<footer>
+  Generated by <code>examples/07_explorer.py</code> in
+  <a href="https://github.com/numberingeometry/bayesian-geometric-forest">bayesian-geometric-forest</a>.
+  The data are embedded in this page; nothing is fetched.
+</footer>
+<script>
+const DATA = /*DATA*/null;
+const NS = "http://www.w3.org/2000/svg";
+const W = 760, H = 460, PAD = 22;
+const svg = document.getElementById("plot");
+const state = { ds: 0, mode: "draws", draw: 0, focus: null, playing: true, timer: null };
+const RAMP = ["#fde7c3", "#f9845b", "#b5367a", "#3b0f70", "#000004"];
+
+function rampColor(t) {
+  t = Math.max(0, Math.min(1, t)) * (RAMP.length - 1);
+  const i = Math.min(RAMP.length - 2, Math.floor(t)), f = t - i;
+  const a = hex(RAMP[i]), b = hex(RAMP[i + 1]);
+  return `rgb(${a.map((v, k) => Math.round(v + f * (b[k] - v))).join(",")})`;
+}
+function hex(h) { return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function cvar(k) { return `var(--c${k < 6 ? k : "x"})`; }
+
+function project(ds) {
+  const xs = ds.xy.map(p => p[0]), ys = ds.xy.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const s = Math.min((W - 2 * PAD) / (x1 - x0), (H - 2 * PAD) / (y1 - y0));
+  const ox = (W - s * (x1 - x0)) / 2, oy = (H - s * (y1 - y0)) / 2;
+  return ds.xy.map(([x, y]) => [ox + s * (x - x0), H - (oy + s * (y - y0))]);
+}
+
+function partition(parent) {
+  const n = parent.length, root = new Array(n).fill(-1);
+  for (let v = 0; v < n; v++) {
+    let u = v; const path = [];
+    while (root[u] < 0 && parent[u] >= 0) { path.push(u); u = parent[u]; }
+    const r = root[u] >= 0 ? root[u] : u;
+    root[u] = r; path.forEach(w => root[w] = r);
+  }
+  return root;
+}
+
+function treeColors(ds, parent) {
+  // Colour each tree by the point-estimate cluster most of its members carry.
+  const root = partition(parent), groups = {};
+  root.forEach((r, i) => (groups[r] = groups[r] || []).push(i));
+  const col = new Array(parent.length);
+  Object.values(groups).forEach(members => {
+    if (members.length < 6) { members.forEach(i => col[i] = "var(--cx)"); return; }
+    const counts = {};
+    members.forEach(i => counts[ds.labels[i]] = (counts[ds.labels[i]] || 0) + 1);
+    const best = +Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    members.forEach(i => col[i] = cvar(best));
+  });
+  return col;
+}
+
+function coclustering(ds, i) {
+  const n = ds.labels.length, out = new Float64Array(n);
+  ds.partitions.forEach(lab => { const li = lab[i]; for (let j = 0; j < n; j++) if (lab[j] === li) out[j] += 1; });
+  return out.map(v => v / ds.partitions.length);
+}
+
+function render() {
+  const ds = DATA.datasets[state.ds], P = project(ds), n = P.length;
+  svg.replaceChildren();
+  const parent = ds.draws[state.draw];
+  let fill = new Array(n).fill(null), r = new Array(n).fill(3.2);
+  if (state.mode === "draws") {
+    const col = treeColors(ds, parent);
+    const byColor = {};
+    parent.forEach((p, i) => { if (p >= 0) (byColor[col[i]] = byColor[col[i]] || []).push(`M${P[i][0].toFixed(1)} ${P[i][1].toFixed(1)}L${P[p][0].toFixed(1)} ${P[p][1].toFixed(1)}`); });
+    Object.entries(byColor).forEach(([c, segs]) => {
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("d", segs.join("")); path.setAttribute("stroke", c); path.setAttribute("fill", "none");
+      path.setAttribute("stroke-width", "1.4"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("opacity", "0.9");
+      svg.appendChild(path);
+    });
+    fill = col;
+    const K = parent.filter(p => p < 0).length;
+    document.getElementById("status").textContent = `Draw ${state.draw + 1} of ${ds.draws.length}: ${K} trees. Rings mark the roots.`;
+  } else if (state.mode === "cocluster") {
+    const i = state.focus ?? ds.default_focus;
+    const p = coclustering(ds, i);
+    fill = Array.from(p, v => rampColor(v));
+    document.getElementById("status").textContent = `Pr(point j shares a cluster with the outlined point), over ${ds.partitions.length} draws. Click another point.`;
+  } else {
+    fill = ds.uncertainty.map(u => rampColor(u / 0.5));
+    r = ds.uncertainty.map(u => 3 + 2.5 * Math.min(1, u / 0.5));
+    document.getElementById("status").textContent = "1 minus the average co-clustering with the rest of the point's estimated cluster.";
+  }
+  P.forEach(([x, y], i) => {
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", x.toFixed(1)); c.setAttribute("cy", y.toFixed(1)); c.setAttribute("r", r[i]);
+    c.setAttribute("fill", fill[i]);
+    const t = document.createElementNS(NS, "title");
+    t.textContent = `point ${i}: uncertainty ${ds.uncertainty[i].toFixed(2)}`;
+    c.appendChild(t); svg.appendChild(c);
+  });
+  if (state.mode === "draws") {
+    parent.forEach((p, i) => { if (p < 0) {
+      const c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", P[i][0].toFixed(1)); c.setAttribute("cy", P[i][1].toFixed(1)); c.setAttribute("r", 6.5);
+      c.setAttribute("fill", "none"); c.setAttribute("stroke", fill[i]); c.setAttribute("stroke-width", 1.8);
+      c.setAttribute("pointer-events", "none"); svg.appendChild(c); } });
+  }
+  if (state.mode === "cocluster") {
+    const i = state.focus ?? ds.default_focus;
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", P[i][0]); c.setAttribute("cy", P[i][1]); c.setAttribute("r", 9);
+    c.setAttribute("fill", "none"); c.setAttribute("stroke", "var(--ink)"); c.setAttribute("stroke-width", 2);
+    c.setAttribute("pointer-events", "none"); svg.appendChild(c);
+  }
+  document.getElementById("lo").textContent = "0";
+  document.getElementById("hi").textContent = state.mode === "uncertainty" ? "≥ 0.5" : "1";
+}
+
+function renderSide() {
+  const ds = DATA.datasets[state.ds];
+  const ks = Object.keys(ds.k_posterior).map(Number).sort((a, b) => a - b);
+  const kmin = ks[0], kmax = ks[ks.length - 1], vals = [];
+  for (let k = kmin; k <= kmax; k++) vals.push([k, ds.k_posterior[k] || 0]);
+  const top = Math.max(...vals.map(v => v[1]));
+  const bars = document.getElementById("bars"), labels = document.getElementById("barlabels");
+  bars.replaceChildren(); labels.replaceChildren();
+  vals.forEach(([k, v]) => {
+    const b = document.createElement("div"); b.className = "bar"; b.style.height = `${(100 * v / top).toFixed(1)}%`;
+    b.title = `K = ${k}: ${(100 * v).toFixed(1)}%`; bars.appendChild(b);
+    const s = document.createElement("span"); s.textContent = k; labels.appendChild(s);
+  });
+  document.getElementById("kinfo").textContent = `${ds.n} points, ${ds.partitions.length} retained draws. ${ds.k_note}`;
+  document.getElementById("explain").innerHTML = `<h2>${ds.name}</h2><p>${ds.about}</p>`;
+}
+
+function setMode(m) {
+  state.mode = m;
+  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  render();
+}
+function setDataset(i) {
+  state.ds = i; state.draw = 0; state.focus = null;
+  document.querySelectorAll("#tabs button").forEach((b, k) => b.setAttribute("aria-pressed", k === i));
+  const slider = document.getElementById("slider");
+  slider.max = DATA.datasets[i].draws.length - 1; slider.value = 0;
+  renderSide(); render();
+}
+function tick() {
+  if (state.mode !== "draws") return;
+  const ds = DATA.datasets[state.ds];
+  state.draw = (state.draw + 1) % ds.draws.length;
+  document.getElementById("slider").value = state.draw; render();
+}
+function setPlaying(on) {
+  state.playing = on; clearInterval(state.timer);
+  document.getElementById("play").textContent = on ? "Pause" : "Play";
+  if (on) state.timer = setInterval(tick, 900);
+}
+
+DATA.datasets.forEach((ds, i) => {
+  const b = document.createElement("button"); b.textContent = ds.name; b.setAttribute("aria-pressed", i === 0);
+  b.addEventListener("click", () => setDataset(i)); document.getElementById("tabs").appendChild(b);
+});
+document.querySelectorAll("#modes button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+// A click anywhere on the plot selects the nearest point, so small dots are easy to hit.
+svg.style.cursor = "pointer";
+svg.addEventListener("click", e => {
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  const P = project(DATA.datasets[state.ds]);
+  let best = 0, bd = Infinity;
+  P.forEach(([x, y], i) => { const d = (x - p.x) ** 2 + (y - p.y) ** 2; if (d < bd) { bd = d; best = i; } });
+  if (bd > 30 * 30) return;
+  state.focus = best; setPlaying(false); setMode("cocluster");
+});
+document.getElementById("slider").addEventListener("input", e => { state.draw = +e.target.value; setPlaying(false); setMode("draws"); });
+document.getElementById("play").addEventListener("click", () => { setPlaying(!state.playing); if (state.playing) setMode("draws"); });
+const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+setDataset(0); setPlaying(!reduce);
+</script>
+</body>
+</html>

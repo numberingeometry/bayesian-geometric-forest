@@ -14,6 +14,7 @@ cover algorithm of Tam, Dunson & Duan (Biometrika 2025) is a third exact sampler
 is not implemented here.
 """
 
+from bisect import bisect_right
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -64,23 +65,27 @@ def wilson_trees(
         parents[d, v] is the next node on v's path to the roots, -1 for a root.
     """
     N = cum.shape[0]
-    rows = [cum[u] for u in range(N)]  # row views: cheaper to index in the hot loop
+    # Python lists + bisect: the hot loop is one random step, and a C-level bisect on a
+    # list is several times faster than a NumPy call per step.
+    rows = [cum[u].tolist() for u in range(N)]
     out = np.full((n_draws, N), -1, dtype=np.int64)
-    buffer = rng.random(8192).tolist()
-    pos = 0
+    last = N - 1
     for d in range(n_draws):
         in_tree = roots.tolist()
         nxt = [-1] * N
-        parent = out[d]
+        parent = [-1] * N
+        buffer = rng.random(4096).tolist()
+        pos = 0
         for start in rng.permutation(N).tolist():
             u = start
             while not in_tree[u]:
-                if pos == len(buffer):
-                    buffer = rng.random(8192).tolist()
+                if pos == 4096:
+                    buffer = rng.random(4096).tolist()
                     pos = 0
-                v = int(np.searchsorted(rows[u], buffer[pos], side="right"))
+                v = bisect_right(rows[u], buffer[pos])
                 pos += 1
-                v = v if v < N else N - 1
+                if v > last:
+                    v = last
                 nxt[u] = v
                 u = v
             u = start
@@ -88,6 +93,7 @@ def wilson_trees(
                 in_tree[u] = True
                 parent[u] = nxt[u]
                 u = nxt[u]
+        out[d] = parent
     return out
 
 
