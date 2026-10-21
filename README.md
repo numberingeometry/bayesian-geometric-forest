@@ -25,7 +25,7 @@ The interactive explorer is self-contained: its figures and chart runtime are em
 ## Quick start
 
 ```bash
-python -m pip install bayesian-geometric-forest
+python -m pip install "git+https://github.com/numberingeometry/bayesian-geometric-forest"
 ```
 
 ```python
@@ -79,7 +79,7 @@ The test workflow runs on Python 3.9 and 3.12, lints the code, runs coverage, an
 
 ## References
 
-This repository is motivated by work on spectral clustering and Forest Processes (Duan & Roy, 2023), Bayesian Spanning Trees (Duan & Dunson, 2024), Bayesian Distance Clustering (Duan & Dunson, 2021), and loop-erased random-walk sampling. See [theory notes](docs/theory.md) for the mathematical background and links to the papers.
+This repository is motivated by work on spectral clustering and the forest process (Duan & Roy, JASA 2024), Bayesian spanning trees (Duan & Dunson, JMLR 2023), Bayesian distance clustering (Duan & Dunson, JMLR 2021), and exact spanning-tree sampling (Wilson, 1996; Tam, Dunson & Duan, Biometrika 2025). The current estimators are prototypes, not reproductions of those papers; see the [theory notes](docs/theory.md) for what the papers establish, what is implemented, and verified citations.
 
 ## License
 

@@ -1,71 +1,91 @@
-# Theoretical foundations and implementation notes
+# Theory notes
 
-This page is a concise mathematical orientation to the methods that motivate
-the package; it is not a replacement for the proofs in the cited papers. The
-current production sampler targets the posterior conditional on a fixed number
-of clusters. The distance-only prototype remains experimental.
+This page separates two things: what the cited papers establish, and what this
+package implements. Statements about the papers are paraphrased; consult the papers
+for exact assumptions.
 
-## 1. Introduction & Problem Formulation
+## The Bayesian spanning forest model (Duan & Roy, 2024)
 
-Clustering data $X = \{x_1, \dots, x_n\} \subset \mathbb{R}^d$ into $K$ components is classically modeled using mixture distributions $P(x) = \sum_{k=1}^K \pi_k f(x \mid \theta_k)$. However, when the true data-generating density deviates from standard parametric families (e.g., non-Gaussian heavy-tailed distributions or complex non-linear manifolds), traditional mixture models suffer from severe **model misspecification**.
+Data $y_1, \dots, y_n \in \mathbb{R}^p$ are generated along a spanning forest. Each
+cluster $V_k$ is a tree $T_k$ with a root $\rho_k$:
 
-The **Bayesian Spanning Forest (BSF)** model addresses this challenge by defining the statistical likelihood directly over the **graph topology** of data partitions, bypassing intra-cluster parametric assumptions.
+$$
+L(y \mid V, F, R) = \prod_{k=1}^{K} r(y_{\rho_k}) \prod_{(i,j) \in T_k} f(y_i \mid y_j),
+$$
 
----
+with a diffuse root density $r$ (multivariate Cauchy in the paper) and a symmetric leaf
+density $f$ (Gaussian, with local scales $\sigma_{ij} = \tilde\sigma_i \tilde\sigma_j$).
+The edges and roots are latent; the partition $V$ is the parameter of interest.
 
-## 2. Kirchhoff's Matrix Tree Theorem & Spanning Tree Weight Counting
+Adding an auxiliary node $0$ joined to every root turns a rooted forest into one
+spanning tree $\mathcal T$ on $n+1$ nodes. With the paper's prior
+$\Pi(\mathcal T) \propto \lambda^K$, the posterior is a weighted spanning-tree
+distribution:
 
-Given a similarity graph $G = (V, E, W)$ with adjacency weights $W_{ij} \ge 0$, the unnormalized graph Laplacian for a cluster $C_k \subseteq V$ of size $|C_k| = m$ is defined as:
+$$
+\Pi(\mathcal T \mid y) \propto \prod_{(i,j) \in \mathcal T} A_{ij},
+\qquad A_{ij} = f(y_i \mid y_j), \quad A_{0i} = \lambda\, r(y_i).
+$$
 
-$$L_{C_k} = D_{C_k} - W_{C_k}$$
+Summing over trees with Kirchhoff's matrix-tree theorem gives the marginal posterior
+of the partition:
 
-where $D_{C_k} = \text{diag}(\sum_{j} W_{ij})$.
+$$
+\Pi(V \mid y) \propto \lambda^K \prod_{k=1}^{K}
+\Big(\sum_{i \in V_k} r(y_i)\Big)\, \tau(V_k),
+\qquad
+\tau(V_k) = \sum_{T \text{ spans } V_k} \prod_{(i,j) \in T} A_{ij} = \det L_{V_k}^{(u)},
+$$
 
-### Theorem 1 (Kirchhoff's Matrix Tree Theorem)
-The sum of products of edge weights over all spanning trees $T$ in a connected component $C_k$ is equal to any cofactor of the Laplacian matrix $L_{C_k}$:
+where $L_{V_k}^{(u)}$ is the Laplacian of $A$ restricted to $V_k$ with any one row and
+column removed.
 
-$$\tau(C_k, W) = \sum_{T \in \text{SpanningTrees}(C_k)} \prod_{e \in T} w(e) = \det(L_{C_k, (uu)})$$
+**Results in the papers.**
 
-where $L_{C_k, (uu)}$ is the $(m-1) \times (m-1)$ principal submatrix formed by deleting any arbitrary row $u$ and column $u$.
+- *Duan & Roy (2024), Theorem 1.* The leading eigenvectors of the posterior edge-inclusion
+  matrix $M_{ij} = \Pr[(i,j) \in \mathcal T \mid y]$ are close to those used by normalized
+  spectral clustering, with an explicit perturbation bound. This is the sense in which
+  the forest model is a generative counterpart of spectral clustering.
+- *Duan & Roy (2024), Theorems 2 and 3.* Posterior ratio consistency for separable
+  clusters, under a diminishing kernel scale, a minimum-separation condition and a
+  near-flat root density.
+- *Zheng, Duan & Roy (arXiv:2409.19129, submitted).* Posterior concentration on the true
+  partition when data come from an unknown collection of component distributions under
+  a mild asymptotic separation condition, with an upper bound on the expected
+  misclassification rate.
 
----
+## Exact sampling of spanning trees
 
-## 3. The Forest Process Prior
+Wilson's algorithm (1996) draws a spanning tree with probability proportional to the
+product of its edge weights, exactly, by running loop-erased random walks. Rooting the
+walks at the auxiliary node $0$ therefore yields exact draws from
+$\Pi(\mathcal T \mid y)$ for fixed kernel parameters. Duan & Roy use the related
+Aldous–Broder covering walk; Tam, Dunson & Duan (2025) develop a fast-forwarded cover
+algorithm for graphs with bottlenecks. This package implements Wilson's algorithm.
 
-The **Forest Process** defines a nonparametric prior distribution over graph partitions $\mathcal{C} = \{C_1, \dots, C_K\}$ on similarity graphs:
+## Implementation status
 
-$$P(\mathcal{C} \mid \alpha, \beta, \theta) = \frac{\alpha^K}{Z(\alpha, \beta, \theta)} \prod_{k=1}^K \Gamma(|C_k| - \beta) \cdot \tau(C_k, W)^{\theta}$$
+The notes above describe the published model. The package's estimators are being
+brought in line with it; until that work lands, `BayesianSpanningForest` implements a
+simplified fixed-$K$ partition model and should be read as a prototype, not as a
+reproduction of Duan & Roy (2024).
 
-where:
-- $\alpha > 0$ is the concentration hyper-parameter controlling the number of clusters $K$.
-- $\beta \in [0, 1)$ is the Pitman-Yor discount parameter governing power-law cluster size tails.
-- $\theta \ge 0$ is the graph topological scaling exponent regulating spanning forest connectivity.
+## References
 
----
-
-## 4. Eigen-Equivalence to Normalized Spectral Clustering
-
-### Theorem 2 (Duan & Roy, 2023)
-Let $P_{ij} = \mathbb{P}(\text{node } i \text{ and node } j \text{ belong to same cluster} \mid X)$ be the MCMC posterior co-clustering probability matrix. 
-
-Under mild conditions on the graph weights $W$, the leading $K$ eigenvectors of $P$ converge asymptotically to the leading eigenvectors of the normalized graph Laplacian $L_{sym} = D^{-1/2} L D^{-1/2}$.
-
----
-
-## 5. Theoretical Consistency under Misspecification (Zheng, Duan & Roy, 2024)
-
-### Theorem 3 (Posterior Concentration)
-Let data $X_1, \dots, X_n$ be generated from an unknown collection of $K^*$ component distributions $P_1^*, \dots, P_{K^*}^*$. 
-
-Assuming a mild asymptotic cluster separation condition holds with probability tending to 1:
-
-$$\min_{k \neq k'} \text{dist}(C_k^*, C_{k'}^*) \ge \Delta_n > 0$$
-
-The posterior distribution concentrates on the true partition $\mathcal{C}^*$:
-
-$$\mathbb{P}(\mathcal{C} = \mathcal{C}^* \mid X_1, \dots, X_n) \xrightarrow{p} 1 \quad \text{as } n \to \infty$$
-
-### Corollary (Expected Misclassification Rate Upper Bound)
-The expected misclassification rate $\mathbb{E}[R_n]$ under BSF is upper-bounded by:
-
-$$\mathbb{E}[R_n] \le C \exp\left( - \frac{\Delta_n^2}{8\sigma^2} \right)$$
+- L. L. Duan and A. Roy. Spectral clustering, Bayesian spanning forest, and forest
+  process. *Journal of the American Statistical Association*, 119(547):2140–2153, 2024.
+  [arXiv:2202.00493](https://arxiv.org/abs/2202.00493)
+- Y. Zheng, L. L. Duan and A. Roy. Consistency of graphical model-based clustering:
+  robust clustering using Bayesian spanning forest. Preprint,
+  [arXiv:2409.19129](https://arxiv.org/abs/2409.19129)
+- L. L. Duan and D. B. Dunson. Bayesian spanning tree: estimating the backbone of the
+  dependence graph. *Journal of Machine Learning Research*, 24(397):1–44, 2023.
+  [arXiv:2106.16120](https://arxiv.org/abs/2106.16120)
+- L. L. Duan and D. B. Dunson. Bayesian distance clustering. *Journal of Machine
+  Learning Research*, 22(224):1–27, 2021.
+  [jmlr.org/papers/v22/20-688](https://jmlr.org/papers/v22/20-688.html)
+- E. Tam, D. B. Dunson and L. L. Duan. Exact sampling of spanning trees via
+  fast-forwarded random walks. *Biometrika*, 112(2):asaf031, 2025.
+  [arXiv:2405.03096](https://arxiv.org/abs/2405.03096)
+- D. B. Wilson. Generating random spanning trees more quickly than the cover time.
+  *Proceedings of STOC*, 1996.

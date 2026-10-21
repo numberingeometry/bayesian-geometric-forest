@@ -1,9 +1,10 @@
 """
 Bayesian Spanning Tree (BST) for Feature Dependence Network Backbone Estimation
 =================================================================================
-Implements Bayesian Spanning Tree graph estimation (Duan & Dunson, 2024, JMLR)
-for discovering the primary backbone structure of high-dimensional variable
-dependence graphs without full precision matrix inversion.
+Inspired by Bayesian spanning tree estimation (Duan & Dunson, JMLR 2023). This is
+not a reproduction of that model: it builds a correlation kernel between features,
+reports its minimum-dissimilarity spanning tree, and samples weighted spanning trees
+on the kernel to estimate edge-inclusion frequencies.
 """
 
 from typing import List, Optional, Tuple, Union

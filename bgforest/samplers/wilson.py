@@ -1,9 +1,10 @@
 """
 Wilson's Loop-Erased Random Walk (LERW) Exact Spanning Tree/Forest Sampler
 ===========================================================================
-Implements Wilson's algorithm (Wilson, 1996) and Fast-Forwarded Random Walks
-(Tam, Dunson & Duan, 2025, Biometrika) for exact, unbiased sampling of random
-spanning trees and forests from weighted graphs without MCMC mixing delays.
+Implements Wilson's algorithm (Wilson, 1996) for exact sampling of random spanning
+trees and rooted forests from weighted graphs, with probability proportional to the
+product of edge weights. (The fast-forwarded cover algorithm of Tam, Dunson & Duan,
+Biometrika 2025, is a different exact sampler and is not implemented here.)
 """
 
 from typing import List, Optional, Tuple, Union
