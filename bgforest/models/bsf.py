@@ -45,7 +45,7 @@ class BayesianSpanningForest(BaseEstimator, ClusterMixin):
         Forest Process concentration parameter (> 0).
     beta : float, default=0.0
         Forest Process discount parameter in [0, 1).
-    theta : float, default=1.0
+    theta : float, default=0.1
         Spanning tree weight exponent.
     n_iter : int, default=1000
         Number of MCMC iterations.

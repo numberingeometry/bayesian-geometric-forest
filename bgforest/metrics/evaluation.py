@@ -3,10 +3,10 @@ Clustering Evaluation and Uncertainty Metrics
 =============================================
 Provides quantitative metrics including Adjusted Rand Index (ARI),
 Normalized Mutual Information (NMI), point-wise Bayesian assignment entropy,
-and empirical bounds on misclassification rate (Zheng, Duan & Roy, 2024).
+and the empirical misclassification rate under the best label matching.
 """
 
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
@@ -62,63 +62,27 @@ def compute_uncertainty_entropy(proba: np.ndarray) -> np.ndarray:
     return entropy
 
 
-def compute_misclassification_bound(
-    X: np.ndarray, labels_true: np.ndarray, labels_pred: np.ndarray, sigma: float = 1.0
-) -> Tuple[float, float]:
+def compute_misclassification_rate(labels_true: np.ndarray, labels_pred: np.ndarray) -> float:
     """
-    Compute empirical misclassification rate and theoretical upper bound (Zheng, Duan & Roy, 2024).
+    Fraction of points misassigned under the best one-to-one matching of labels.
 
-    Parameters
-    ----------
-    X : np.ndarray of shape (n, d)
-        Data matrix.
-    labels_true : np.ndarray
-        Ground truth cluster labels.
-    labels_pred : np.ndarray
-        Model predicted cluster labels.
-    sigma : float, default=1.0
-        Kernel bandwidth parameter.
-
-    Returns
-    -------
-    empirical_error : float
-        Observed misclassification rate under optimal label permutation.
-    bound_estimate : float
-        Theoretical asymptotic upper bound estimate exp(- Delta^2 / (8 * sigma^2)).
+    The matching is found with the Hungarian algorithm, so the rate is invariant to
+    label permutation. Extra predicted clusters count as errors.
     """
     from scipy.optimize import linear_sum_assignment
 
     labels_true = np.asarray(labels_true, dtype=np.int64)
     labels_pred = np.asarray(labels_pred, dtype=np.int64)
+    if labels_true.shape != labels_pred.shape or labels_true.ndim != 1:
+        raise ValueError("labels_true and labels_pred must be 1D arrays of equal length.")
 
-    # Compute optimal permutation error via Hungarian algorithm
     unique_t = np.unique(labels_true)
     unique_p = np.unique(labels_pred)
-    n_t, n_p = len(unique_t), len(unique_p)
-    cost_matrix = np.zeros((n_t, n_p), dtype=np.float64)
-
+    overlap = np.zeros((len(unique_t), len(unique_p)), dtype=np.float64)
     for i, t in enumerate(unique_t):
         for j, p in enumerate(unique_p):
-            cost_matrix[i, j] = -np.sum((labels_true == t) & (labels_pred == p))
+            overlap[i, j] = np.sum((labels_true == t) & (labels_pred == p))
 
-    row_ind, col_ind = linear_sum_assignment(cost_matrix)
-    correct_count = -cost_matrix[row_ind, col_ind].sum()
-    empirical_error = 1.0 - (correct_count / float(len(labels_true)))
-
-    # Estimate min separation distance Delta between cluster centroids
-    centroids = []
-    for t in unique_t:
-        idx = np.where(labels_true == t)[0]
-        centroids.append(np.mean(X[idx], axis=0))
-
-    centroids = np.array(centroids)
-    if len(centroids) >= 2:
-        from scipy.spatial.distance import pdist
-
-        min_dist = np.min(pdist(centroids))
-    else:
-        min_dist = 1.0
-
-    bound_estimate = float(np.exp(-(min_dist**2) / (8.0 * (sigma**2))))
-
-    return float(empirical_error), bound_estimate
+    row_ind, col_ind = linear_sum_assignment(-overlap)
+    correct = overlap[row_ind, col_ind].sum()
+    return float(1.0 - correct / float(len(labels_true)))

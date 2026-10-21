@@ -6,7 +6,7 @@ import numpy as np
 
 from bgforest.metrics.evaluation import (
     compute_clustering_metrics,
-    compute_misclassification_bound,
+    compute_misclassification_rate,
     compute_uncertainty_entropy,
 )
 
@@ -27,11 +27,7 @@ def test_compute_uncertainty_entropy():
     assert entropy[1] > entropy[2] > entropy[0]
 
 
-def test_compute_misclassification_bound():
-    X = np.array([[0.0, 0.0], [0.1, 0.1], [10.0, 10.0], [10.1, 10.1]])
-    y_true = np.array([0, 0, 1, 1])
-    y_pred = np.array([0, 0, 1, 1])
-
-    err, bound = compute_misclassification_bound(X, y_true, y_pred, sigma=1.0)
-    assert err == 0.0
-    assert bound > 0.0
+def test_compute_misclassification_rate():
+    y_true = np.array([0, 0, 1, 1, 1])
+    assert compute_misclassification_rate(y_true, np.array([1, 1, 0, 0, 0])) == 0.0
+    assert np.isclose(compute_misclassification_rate(y_true, np.array([0, 0, 1, 1, 0])), 0.2)
