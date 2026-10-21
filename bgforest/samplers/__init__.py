@@ -1,8 +1,5 @@
-"""
-MCMC and Exact Spanning Tree Sampler Modules
-"""
+"""Exact spanning-tree and forest samplers."""
 
-from bgforest.mcmc.sampler import BSFMCMCSampler
-from bgforest.samplers.wilson import WilsonLERWSampler
+from bgforest.samplers.wilson import WilsonLERWSampler, WilsonSampler, forest_partition
 
-__all__ = ["BSFMCMCSampler", "WilsonLERWSampler"]
+__all__ = ["WilsonSampler", "WilsonLERWSampler", "forest_partition"]

@@ -1,278 +1,307 @@
 """
-Bayesian Spanning Forest Scikit-Learn Estimator
-==============================================
-Provides the `BayesianSpanningForest` estimator class conforming to
-Scikit-Learn cluster API standards for robust graphical model-based clustering.
+Bayesian spanning forest clustering (Duan & Roy, JASA 2024)
+===========================================================
+
+Each cluster is a tree: a root drawn from a diffuse Cauchy density, every other point
+drawn from a Gaussian centred on its parent. The trees are latent and are summed
+over; the partition, the number of clusters and their uncertainty come out of the
+posterior.
+
+Two ways to set the Gaussian leaf scales sigma_ij = s_i s_j:
+
+* ``scales="adaptive"`` (default): the paper's hierarchical inverse-gamma prior on
+  s_i and its Gibbs sampler (Sections 2.4 and 3.1). Each sweep draws the whole forest
+  exactly given the scales, then updates the scales given the forest.
+* ``scales="local"`` or an array: the scales are fixed (``"local"`` uses the distance
+  to the ``n_neighbors``-th neighbour). The posterior over forests is then a weighted
+  spanning-tree law, and every draw is exact and independent: no burn-in, no mixing
+  diagnostics. Edge-inclusion probabilities are also available in closed form.
 """
 
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
+from scipy.spatial.distance import cdist
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.validation import check_array, check_is_fitted
 
-from bgforest.core.graph import (
-    build_knn_similarity,
-    build_rbf_similarity,
-    connect_knn_components,
-)
-from bgforest.mcmc.sampler import BSFMCMCSampler
-from bgforest.models.forest_process import ForestProcess
+from bgforest.core.forest_model import ForestKernel, local_scales
+from bgforest.samplers.wilson import RandomLike, WilsonSampler, _as_generator, forest_partition
+
+# Hyper-prior constants of Duan & Roy (2024), Section 2.4.
+A_SIGMA, XI_SIGMA, B_SIGMA = 100.0, 1.0, 10.0
+ROOT_SHAPE, ROOT_RATE = 2.0, 1.0
+
+
+def _inv_gamma(rng: np.random.Generator, shape, rate):
+    """Draw from Inverse-Gamma(shape, rate): the reciprocal of Gamma(shape, rate)."""
+    shape, rate = np.broadcast_arrays(np.asarray(shape, dtype=np.float64), np.asarray(rate, dtype=np.float64))
+    return rate / rng.gamma(shape)
+
+
+def _monte_carlo_inclusion(forests: np.ndarray):
+    """Edge- and root-inclusion frequencies over drawn forests (parent pointers)."""
+    n_draws, n = forests.shape
+    E = np.zeros((n, n))
+    roots = np.zeros(n)
+    for parent in forests:
+        child = np.flatnonzero(parent >= 0)
+        np.add.at(E, (child, parent[child]), 1.0)
+        roots += parent < 0
+    return (E + E.T) / n_draws, roots / n_draws
+
+
+def _depth_parity(parent: np.ndarray) -> np.ndarray:
+    """0/1 depth parity of each node in a rooted forest (roots have depth 0)."""
+    n = parent.shape[0]
+    parity = np.full(n, -1, dtype=np.int64)
+    for v in range(n):
+        path = []
+        u = v
+        while parity[u] < 0 and parent[u] >= 0:
+            path.append(u)
+            u = parent[u]
+        if parity[u] < 0:
+            parity[u] = 0
+        p = parity[u]
+        for w in reversed(path):
+            p ^= 1
+            parity[w] = p
+    return parity
 
 
 class BayesianSpanningForest(BaseEstimator, ClusterMixin):
-    """
-    Bayesian Spanning Forest (BSF) Cluster Estimator.
+    """Bayesian spanning forest clustering with posterior uncertainty.
 
     Parameters
     ----------
     n_clusters : int, optional
-        Target number of clusters for final partition extraction.
-        If None, automatically inferred from posterior model mode.
-    graph_type : str, default='knn'
-        Graph similarity matrix builder ('rbf' or 'knn').
-    gamma : float, optional
-        RBF kernel scale coefficient gamma = 1 / (2 * sigma^2).
-    sigma : float, optional
-        RBF Gaussian standard deviation bandwidth.
-    adaptive_bandwidth : bool, default=False
-        If True, uses local self-tuning bandwidth (Zelnik-Manor & Perona, 2004).
-    n_neighbors : int, default=10
-        Number of nearest neighbors for k-NN graph construction.
-    alpha : float, default=1.0
-        Forest Process concentration parameter (> 0).
-    beta : float, default=0.0
-        Forest Process discount parameter in [0, 1).
-    theta : float, default=0.1
-        Spanning tree weight exponent.
-    n_iter : int, default=1000
-        Number of MCMC iterations.
-    burn_in : int, default=300
-        Number of MCMC burn-in iterations.
-    thinning : int, default=1
-        Thinning interval for MCMC posterior sampling.
-    sigma_likelihood : Optional[float], default=None
-        Likelihood variance standard deviation. If None, estimated adaptively from data.
-    scale_features : bool, default=True
-        If True, applies StandardScaler to features prior to graph construction.
-    random_state : int, optional
-        Random seed for reproducibility.
+        Number of clusters in the point estimate ``labels_``. The posterior itself is
+        over all K; by default the point estimate uses the posterior mode of K.
+    scales : {"adaptive", "local"} or array of shape (n_samples,), default="adaptive"
+        How the leaf scales s_i (sigma_ij = s_i s_j) are set; see the module docstring.
+    n_neighbors : int, default=7
+        Neighbour rank for the local scales, and for initialising adaptive scales.
+    lam : float, default=0.5
+        Prior weight per cluster, Pi(T) proportional to lam^K (the paper's value).
+    root_scale : float, default=1.0
+        Cauchy root scale for fixed-scale fits. In adaptive mode it is sampled under
+        the paper's Inverse-Gamma(2, 1) prior on its square and this is the start value.
+    n_draws : int, default=200
+        Number of retained posterior draws.
+    burn_in : int, default=200
+        Discarded sweeps in adaptive mode (ignored for fixed scales: draws are exact).
+    standardize : bool, default=True
+        Standardise features first, as the paper assumes.
+    random_state : int, numpy Generator or RandomState, optional
 
     Attributes
     ----------
-    labels_ : np.ndarray of shape (n_samples,)
-        Cluster assignments for input dataset.
-    co_clustering_matrix_ : np.ndarray of shape (n_samples, n_samples)
-        Posterior co-clustering matrix P_ij = P(nodes i and j in same cluster).
-    spectral_eigenvectors_ : np.ndarray of shape (n_samples, n_components)
-        Leading eigenvectors extracted from co-clustering matrix P.
-    spectral_eigenvalues_ : np.ndarray of shape (n_components,)
-        Leading eigenvalues of co-clustering matrix P.
-    log_posterior_trace_ : List[float]
-        Log-posterior values recorded across MCMC iterations.
-    n_clusters_inferred_ : int
-        Number of clusters inferred.
+    labels_ : (n_samples,) array
+        Point estimate: rank-K eigen-factorisation of the co-clustering matrix, then
+        k-means (the paper uses a symmetric non-negative factorisation here).
+    partitions_ : (n_draws, n_samples) array
+        Posterior draws of the partition.
+    forests_ : (n_draws, n_samples) array
+        Parent pointers of each drawn forest (-1 marks a root).
+    n_clusters_draws_ : (n_draws,) array
+        Number of clusters in each draw.
+    co_clustering_matrix_ : (n_samples, n_samples) array
+        Pr(i and j in the same cluster | data), estimated from the draws.
+    edge_inclusion_ : (n_samples, n_samples) array
+        Pr(edge (i, j) in the forest | data): closed form for fixed scales, Monte Carlo
+        for adaptive scales.
+    root_probability_ : (n_samples,) array
+        Pr(i is a cluster root | data); its sum is E[K | data].
+    kernel_ : ForestKernel
+        The fixed kernel, or the posterior-mean-scale kernel in adaptive mode.
+    scales_ : (n_samples,) array
+        Leaf scales used (posterior mean in adaptive mode).
     """
 
     def __init__(
         self,
         n_clusters: Optional[int] = None,
-        graph_type: str = "knn",
-        gamma: Optional[float] = None,
-        sigma: Optional[float] = None,
-        adaptive_bandwidth: bool = False,
-        n_neighbors: int = 10,
-        alpha: float = 1.0,
-        beta: float = 0.0,
-        theta: float = 0.1,
-        n_iter: int = 1000,
-        burn_in: int = 300,
-        thinning: int = 1,
-        sigma_likelihood: Optional[float] = None,
-        scale_features: bool = True,
-        ensure_connected: bool = True,
-        random_state: Optional[int] = None,
+        scales: Union[str, np.ndarray] = "adaptive",
+        n_neighbors: int = 7,
+        lam: float = 0.5,
+        root_scale: float = 1.0,
+        n_draws: int = 200,
+        burn_in: int = 200,
+        standardize: bool = True,
+        random_state: RandomLike = None,
     ):
         self.n_clusters = n_clusters
-        self.graph_type = graph_type
-        self.gamma = gamma
-        self.sigma = sigma
-        self.adaptive_bandwidth = adaptive_bandwidth
+        self.scales = scales
         self.n_neighbors = n_neighbors
-        self.alpha = alpha
-        self.beta = beta
-        self.theta = theta
-        self.n_iter = n_iter
+        self.lam = lam
+        self.root_scale = root_scale
+        self.n_draws = n_draws
         self.burn_in = burn_in
-        self.thinning = thinning
-        self.sigma_likelihood = sigma_likelihood
-        self.scale_features = scale_features
-        self.ensure_connected = ensure_connected
+        self.standardize = standardize
         self.random_state = random_state
 
-    @staticmethod
-    def _infer_n_clusters(W: np.ndarray) -> int:
-        """Choose K with a transparent normalized-Laplacian eigengap heuristic."""
-        n = W.shape[0]
-        if n <= 2:
-            return 1
-        degree = np.sum(W, axis=1)
-        inv_sqrt = np.divide(1.0, np.sqrt(degree), out=np.zeros_like(degree), where=degree > 0)
-        L = np.eye(n) - (inv_sqrt[:, None] * W * inv_sqrt[None, :])
-        eigenvalues = np.linalg.eigvalsh(L)
-        max_k = min(8, n - 1)
-        gaps = np.diff(eigenvalues[: max_k + 1])
-        return int(np.argmax(gaps) + 1)
-
-    def fit(
-        self,
-        X: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        initial_partition: Optional[np.ndarray] = None,
-    ) -> "BayesianSpanningForest":
-        """
-        Fit Bayesian Spanning Forest model to input dataset X.
-
-        Parameters
-        ----------
-        X : np.ndarray of shape (n_samples, n_features)
-            Training data matrix.
-        y : Ignored
-        initial_partition : np.ndarray of shape (n_samples,), optional
-            User-provided initial cluster assignments for MCMC initialization.
-
-        Returns
-        -------
-        self : BayesianSpanningForest
-            Fitted estimator instance.
-        """
-        X_raw = check_array(X, ensure_min_samples=1, ensure_min_features=1, dtype=np.float64)
-        n_samples = X_raw.shape[0]
-        if self.n_clusters is not None and not 1 <= self.n_clusters <= n_samples:
+    # ------------------------------------------------------------------ fitting
+    def fit(self, X: np.ndarray, y=None) -> "BayesianSpanningForest":
+        X = check_array(X, dtype=np.float64, ensure_min_samples=2)
+        n = X.shape[0]
+        if self.n_clusters is not None and not 1 <= self.n_clusters <= n:
             raise ValueError("n_clusters must be between 1 and n_samples.")
-        if self.graph_type not in {"rbf", "knn"}:
-            raise ValueError("graph_type must be either 'rbf' or 'knn'.")
+        if self.n_draws < 1 or self.burn_in < 0:
+            raise ValueError("n_draws must be positive and burn_in non-negative.")
+        if self.lam <= 0 or self.root_scale <= 0:
+            raise ValueError("lam and root_scale must be strictly positive.")
+        self.scaler_ = StandardScaler().fit(X) if self.standardize else None
+        Z = self.scaler_.transform(X) if self.standardize else X
+        self.X_ = Z
+        rng = _as_generator(self.random_state)
+        sampler = WilsonSampler(rng)
 
-        if self.scale_features:
-            self.scaler_ = StandardScaler()
-            X_proc = self.scaler_.fit_transform(X_raw)
+        if isinstance(self.scales, str) and self.scales == "adaptive":
+            self._fit_adaptive(Z, sampler, rng)
         else:
-            X_proc = X_raw
+            if isinstance(self.scales, str):
+                if self.scales != "local":
+                    raise ValueError('scales must be "adaptive", "local" or an array.')
+                s = local_scales(Z, self.n_neighbors)
+            else:
+                s = np.asarray(self.scales, dtype=np.float64)
+                if s.shape != (n,):
+                    raise ValueError("a scales array must have one entry per sample.")
+            self.scales_ = s
+            self.root_scale_ = float(self.root_scale)
+            self.kernel_ = ForestKernel.from_data(Z, s, rho=self.root_scale, lam=self.lam)
+            self.forests_ = self._draw_forests(self.kernel_, sampler, self.n_draws)
+            if self._is_constrained():
+                self.edge_inclusion_, self.root_probability_ = _monte_carlo_inclusion(self.forests_)
+            else:
+                self.edge_inclusion_, self.root_probability_ = self.kernel_.edge_inclusion()
 
-        # 1. Build Similarity Graph Adjacency W
-        if self.graph_type == "rbf":
-            W = build_rbf_similarity(
-                X_proc,
-                gamma=self.gamma,
-                sigma=self.sigma,
-                adaptive_bandwidth=self.adaptive_bandwidth,
-            )
-        else:
-            W = build_knn_similarity(
-                X_proc, n_neighbors=self.n_neighbors, mode="distance", symmetric=True
-            )
-            if self.ensure_connected:
-                W = connect_knn_components(W, X_proc)
-        self.W_ = W
-
-        target_k = self.n_clusters if self.n_clusters is not None else self._infer_n_clusters(W)
-
-        # 2. Configure Forest Process Prior & MCMC Sampler
-        fp = ForestProcess(alpha=self.alpha, beta=self.beta, theta=self.theta)
-        sampler = BSFMCMCSampler(
-            forest_process=fp,
-            n_iter=self.n_iter,
-            burn_in=self.burn_in,
-            thinning=self.thinning,
-            sigma_likelihood=self.sigma_likelihood,
-            random_state=self.random_state,
-        )
-        self.mcmc_sampler_ = sampler
-
-        # Initialize partition if not explicitly supplied
-        if initial_partition is not None:
-            initial_part = np.asarray(initial_partition, dtype=np.int64)
-        elif target_k > 1:
-            from sklearn.cluster import SpectralClustering
-
-            try:
-                sc = SpectralClustering(
-                    n_clusters=target_k,
-                    affinity="precomputed",
-                    n_init=10,
-                    random_state=self.random_state,
-                )
-                initial_part = sc.fit_predict(W)
-            except Exception:
-                initial_part = (
-                    np.random.RandomState(self.random_state).permutation(np.arange(n_samples))
-                    % target_k
-                )
-        else:
-            initial_part = np.zeros(n_samples, dtype=np.int64)
-
-        # 3. Run MCMC Sampling
-        sampler.sample(
-            X_proc,
-            W,
-            initial_partition=initial_part,
-            target_n_clusters=target_k,
-        )
-        self.log_posterior_trace_ = sampler.traces_
-        self.acceptance_rate_ = sampler.acceptance_rate_
-
-        # 4. Compute Posterior Co-Clustering Matrix P_ij
-        P = sampler.compute_co_clustering_matrix()
-        self.co_clustering_matrix_ = P
-
-        # 5. Extract Spectral Eigenvectors & Cluster Partition
-        eigenvalues, eigenvectors = np.linalg.eigh(P)
-        idx = np.argsort(eigenvalues)[::-1]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors[:, idx]
-
-        k = target_k
-
-        self.n_clusters_inferred_ = k
-        self.spectral_eigenvalues_ = eigenvalues[:k]
-        self.spectral_eigenvectors_ = eigenvectors[:, :k]
-
-        if k == 1:
-            self.labels_ = np.zeros(n_samples, dtype=np.int64)
-        else:
-            km = KMeans(n_clusters=k, random_state=self.random_state, n_init=10)
-            self.labels_ = km.fit_predict(self.spectral_eigenvectors_)
-
+        self.partitions_ = np.array([forest_partition(p) for p in self.forests_])
+        self.n_clusters_draws_ = self.partitions_.max(axis=1) + 1
+        P = np.zeros((n, n))
+        for lab in self.partitions_:
+            P += lab[:, None] == lab[None, :]
+        self.co_clustering_matrix_ = P / len(self.partitions_)
+        self._point_estimate(rng)
         return self
 
-    def fit_predict(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
-        """Fit estimator and return cluster labels."""
-        self.fit(X, y)
-        return self.labels_
+    def _fit_adaptive(self, Z: np.ndarray, sampler: WilsonSampler, rng: np.random.Generator) -> None:
+        """Gibbs sampler of Duan & Roy (2024), Section 3.1, with an exact forest step."""
+        n, p = Z.shape
+        sq = cdist(Z, Z, metric="sqeuclidean")
+        norm_sq = np.sum(Z**2, axis=1)  # the root centre is fixed at 0 (standardised data)
+        s = local_scales(Z, self.n_neighbors)
+        beta = (B_SIGMA - 1.0) * float(np.mean(s))
+        eta = beta
+        gamma = float(self.root_scale)
+
+        n_sweeps = self.burn_in + self.n_draws
+        forests = np.empty((self.n_draws, n), dtype=np.int64)
+        scale_sum = np.zeros(n)
+        self.n_clusters_trace_ = np.empty(n_sweeps, dtype=np.int64)
+        self.root_scale_trace_ = np.empty(n_sweeps)
+        self.mean_scale_trace_ = np.empty(n_sweeps)
+
+        for t in range(n_sweeps):
+            kernel = ForestKernel.from_data(Z, s, rho=gamma, lam=self.lam, sq_dists=sq)
+            parent = self._draw_forests(kernel, sampler, 1)[0]
+            roots = parent < 0
+            K = int(roots.sum())
+
+            # Root scale: Cauchy as a scale mixture of normals over u ~ IG(1/2, 1/2).
+            u = _inv_gamma(rng, (1.0 + p) / 2.0, 0.5 + norm_sq[roots] / (2.0 * gamma**2))
+            gamma = float(np.sqrt(_inv_gamma(
+                rng, ROOT_SHAPE + K * p / 2.0, ROOT_RATE + np.sum(norm_sq[roots] / (2.0 * u))
+            )))
+
+            # Leaf scales: eta | beta, beta | s, then s_i | forest in two conditionally
+            # independent blocks (a forest is bipartite by depth parity).
+            eta = float(_inv_gamma(rng, 1.0 + A_SIGMA, beta + XI_SIGMA))
+            beta = float(rng.gamma(1.0 + n * B_SIGMA, 1.0 / (np.sum(1.0 / s) + 1.0 / eta)))
+            child = np.flatnonzero(~roots)
+            par = parent[child]
+            degree = np.bincount(child, minlength=n) + np.bincount(par, minlength=n)
+            parity = _depth_parity(parent)
+            for colour in (0, 1):
+                load = np.zeros(n)
+                np.add.at(load, child, sq[child, par] / (2.0 * s[par]))
+                np.add.at(load, par, sq[child, par] / (2.0 * s[child]))
+                block = parity == colour
+                s_new = _inv_gamma(rng, p * degree[block] / 2.0 + B_SIGMA, load[block] + beta)
+                s[block] = np.maximum(s_new, 1e-12)
+
+            self.n_clusters_trace_[t] = K
+            self.root_scale_trace_[t] = gamma
+            self.mean_scale_trace_[t] = float(np.mean(s))
+            if t >= self.burn_in:
+                d = t - self.burn_in
+                forests[d] = parent
+                scale_sum += s
+
+        self.forests_ = forests
+        self.edge_inclusion_, self.root_probability_ = _monte_carlo_inclusion(forests)
+        self.scales_ = scale_sum / self.n_draws
+        self.root_scale_ = float(np.mean(self.root_scale_trace_[self.burn_in:]))
+        self.kernel_ = ForestKernel.from_data(Z, self.scales_, rho=self.root_scale_, lam=self.lam, sq_dists=sq)
+
+    def _is_constrained(self) -> bool:
+        return False
+
+    def _draw_forests(self, kernel: ForestKernel, sampler: WilsonSampler, k: int) -> np.ndarray:
+        """k exact draws of the forest given the kernel (subclasses may condition them)."""
+        return sampler.sample_forests(kernel, k)
+
+    def _point_estimate(self, rng: np.random.Generator) -> None:
+        values, counts = np.unique(self.n_clusters_draws_, return_counts=True)
+        self.n_clusters_posterior_ = dict(zip(values.tolist(), (counts / counts.sum()).tolist()))
+        k = int(self.n_clusters) if self.n_clusters is not None else int(values[np.argmax(counts)])
+        self.n_clusters_ = k
+        evals, evecs = np.linalg.eigh(self.co_clustering_matrix_)
+        order = np.argsort(evals)[::-1][:k]
+        self.spectral_eigenvalues_ = evals[order]
+        self.spectral_eigenvectors_ = evecs[:, order]
+        if k == 1:
+            self.labels_ = np.zeros(self.X_.shape[0], dtype=np.int64)
+            return
+        seed = int(rng.integers(2**31 - 1))
+        self.labels_ = KMeans(n_clusters=k, n_init=10, random_state=seed).fit_predict(
+            self.spectral_eigenvectors_
+        )
+
+    # --------------------------------------------------------------- summaries
+    def fit_predict(self, X: np.ndarray, y=None) -> np.ndarray:
+        return self.fit(X).labels_
 
     def predict_proba(self, X: Optional[np.ndarray] = None) -> np.ndarray:
-        """
-        Return soft cluster membership probabilities derived from posterior co-clustering.
+        """Soft membership of each fitted point in each point-estimate cluster.
+
+        Entry (i, c) is the average co-clustering probability between i and the
+        members of cluster c, normalised over c. Only the fitted points are supported.
         """
         check_is_fitted(self, ["labels_", "co_clustering_matrix_"])
-        if X is not None:
-            X = check_array(X, dtype=np.float64)
-            if X.shape[0] != len(self.labels_):
-                raise ValueError("predict_proba currently supports the fitted observations only.")
-
-        n_samples = len(self.labels_)
-        k = self.n_clusters_inferred_
-        proba = np.zeros((n_samples, k), dtype=np.float64)
-
+        if X is not None and np.asarray(X).shape[0] != self.labels_.shape[0]:
+            raise ValueError("predict_proba supports the fitted observations only.")
+        k = self.n_clusters_
+        proba = np.zeros((self.labels_.shape[0], k))
         for c in range(k):
-            cluster_nodes = np.where(self.labels_ == c)[0]
-            if len(cluster_nodes) > 0:
-                proba[:, c] = np.mean(self.co_clustering_matrix_[:, cluster_nodes], axis=1)
+            members = self.labels_ == c
+            if np.any(members):
+                proba[:, c] = self.co_clustering_matrix_[:, members].mean(axis=1)
+        return proba / np.maximum(proba.sum(axis=1, keepdims=True), 1e-12)
 
-        row_sums = np.sum(proba, axis=1, keepdims=True)
-        row_sums = np.maximum(row_sums, 1e-12)
-        proba /= row_sums
+    def assignment_uncertainty(self) -> np.ndarray:
+        """Posterior probability that each point is NOT with its point-estimate cluster.
 
-        return proba
+        1 minus the average co-clustering probability with the other members of its
+        cluster: 0 for points the posterior never separates from their cluster.
+        """
+        check_is_fitted(self, ["labels_", "co_clustering_matrix_"])
+        out = np.empty(self.labels_.shape[0])
+        for i, c in enumerate(self.labels_):
+            members = np.flatnonzero(self.labels_ == c)
+            members = members[members != i]
+            out[i] = 0.0 if members.size == 0 else 1.0 - self.co_clustering_matrix_[i, members].mean()
+        return out

@@ -70,8 +70,8 @@ def make_misspecified_mixtures(
     Generate Heavy-tailed Non-Gaussian Misspecified Clusters.
 
     Models data generated from non-Gaussian t-distributions with asymmetric skewness,
-    demonstrating the consistency of Bayesian Spanning Forests under model misspecification
-    (Zheng, Duan & Roy, 2024).
+    useful for checking robustness to a misspecified within-cluster shape.
+
     """
     rng = np.random.RandomState(random_state)
     n_per_cluster = n_samples // 3
