@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bayesian-geometric-forest"
 version = "0.3.0"
-description = "Bayesian spanning forest clustering (Duan & Roy, JASA 2024) with exact posterior tree draws, closed-form edge probabilities and brute-force verification."
+description = "A reproducible workbench for probabilistic trees, forest clustering and geometric graph experiments."
 readme = "README.md"
 authors = [
-    { name = "Bobby Zhang", email = "53058005+numberingeometry@users.noreply.github.com" }
+    { name = "Bobby Zhang", email = "53058005+chelseaandmadrid@users.noreply.github.com" }
 ]
 license = "MIT"
 keywords = ["bayesian inference", "clustering", "spanning trees", "spanning forests", "uncertainty quantification", "wilson algorithm", "matrix-tree theorem"]

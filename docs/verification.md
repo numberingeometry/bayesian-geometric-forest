@@ -2,11 +2,15 @@
 
 # Verification
 
-Every exactness claim in this package is checked against an independent answer obtained
+The core fixed-kernel identities are checked against an independent answer obtained
 by brute force: all $N^{N-2}$ labelled trees on the augmented graph (Pruefer codes) or
 all set partitions. Exact identities are held to $10^{-10}$; sampling checks use a
 chi-square test at $\alpha = 0.001$ with seeds fixed in advance. The same checks run in
 continuous integration on every push.
+
+Unit tests additionally compare every root-attribution entry with independently enumerated
+augmented trees, and check the weighted Aldous–Broder reference sampler against enumerated
+edge and root marginals. Run `python -m pytest tests/test_benchmark_references.py`.
 
 ```sh
 python scripts/verify_exactness.py
@@ -14,9 +18,10 @@ python scripts/verify_exactness.py
 
 | Check | Method | Result | |
 |---|---|---|---|
-| Matrix-tree theorem | log tau via one determinant vs sum over all m^(m-2) trees, m = 2..7 | max abs error 0.0e+00 (log scale) | PASS |
-| Partition posterior | closed form vs all 7^5 = 16,807 augmented trees, all 203 partitions of n = 6 | max abs error 1.4e-15 | PASS |
-| Edge probabilities | A_ij R_eff(i, j) vs enumeration, incl. root edges | max abs error 4.2e-15 | PASS |
+| Matrix-tree theorem | log tau via one determinant vs sum over all m^(m-2) trees, m = 2..7 | max abs error 4.4e-16 (log scale) | PASS |
+| Partition posterior | closed form vs all 7^5 = 16,807 augmented trees, all 203 partitions of n = 6 | max abs error 1.7e-15 | PASS |
+| Edge probabilities | A_ij R_eff(i, j) vs enumeration, incl. root edges | max abs error 4.1e-15 | PASS |
+| Root count distribution | determinantal Bernoulli convolution vs enumerated partition counts | max abs error 1.8e-15 | PASS |
 | Exact forest draws | 100,000 Wilson draws vs enumerated posterior over 62 partitions | chi-square p = 0.321, TV = 0.0042 | PASS |
 | Constrained draws | 40,000 rejection draws vs enumerated conditional posterior (26 partitions) | chi-square p = 0.872, TV = 0.0033; acceptance 0.165 vs Pr(constraints) 0.166 | PASS |
 | Duan & Roy Theorem 1 (illustration) | subspace distance (Frobenius sin-theta) between top-3 eigenvectors of M and of -N; 3-component mixture, sigma_ij = 1 | n = 60: 0.066; n = 120: 0.062; n = 240: 0.057; n = 480: 0.052; n = 960: 0.058 | shown |

@@ -1,0 +1,8 @@
+MathJax 3.2.2, es5/tex-svg.js
+Source: official npm package mathjax@3.2.2
+Upstream: https://github.com/mathjax/MathJax
+License: Apache-2.0; full text in MathJax-LICENSE.txt
+SHA-256 (tex-svg.js): d4295dc33744836935c1399feece5159577b34c5c8ffb9f1c6324cd82e03a882
+
+This pinned SVG bundle renders the documentation's mathematics locally, without
+an external font or script CDN. It is vendored unchanged from the npm archive.

@@ -1,40 +1,43 @@
-<h1 align="center">bayesian-geometric-forest</h1>
+# Bayesian Geometric Forest
 
-<p align="center"><b>Clusters as trees. Forests drawn exactly. Uncertainty you can see.</b></p>
+**A reproducible workbench for probabilistic trees, forest clustering, and graph geometry.**
 
-<p align="center">
-<a href="https://github.com/numberingeometry/bayesian-geometric-forest/actions/workflows/test.yml"><img alt="tests" src="https://github.com/numberingeometry/bayesian-geometric-forest/actions/workflows/test.yml/badge.svg"></a>
-<a href="https://numberingeometry.github.io/bayesian-geometric-forest/"><img alt="docs" src="https://img.shields.io/badge/docs-online-indigo"></a>
-<img alt="Python" src="https://img.shields.io/badge/python-3.9%E2%80%933.12-blue">
-<a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-</p>
+[Open the workbench](https://numberingeometry.github.io/bayesian-geometric-forest/explorer/) · [Documentation](https://numberingeometry.github.io/bayesian-geometric-forest/) · [Benchmarks](docs/benchmarks.md) · [Mathematical reference](docs/theory.md)
 
-<p align="center"><img src="figs/forest-draws.svg" width="720" alt="Posterior draws of a Bayesian spanning forest cycling over two moons, a blob joined by a thin bridge, and a few outliers"></p>
+[![tests](https://github.com/numberingeometry/bayesian-geometric-forest/actions/workflows/test.yml/badge.svg)](https://github.com/numberingeometry/bayesian-geometric-forest/actions/workflows/test.yml)
+[![Python 3.9–3.12](https://img.shields.io/badge/python-3.9%E2%80%933.12-blue)](pyproject.toml)
+[![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-`bgforest` implements the **Bayesian spanning forest** of Duan & Roy (*JASA* 2024): every
-cluster is a tree grown from a root, the trees are summed out, and what remains is a
-posterior over partitions, including the number of clusters. Because that posterior is a
-weighted spanning-tree law on an augmented graph, a whole forest can be **drawn exactly**
-with Wilson's algorithm, and edge probabilities have a **closed form**. Every identity the
-code relies on is **checked against brute-force enumeration** in CI.
+[![Forest Lab: sampled trees, co-clustering, and uncertainty in one workbench](assets/workbench-preview.webp)](https://numberingeometry.github.io/bayesian-geometric-forest/explorer/)
 
-**[Interactive explorer](https://numberingeometry.github.io/bayesian-geometric-forest/explorer/)** ·
-[Documentation](https://numberingeometry.github.io/bayesian-geometric-forest/) ·
-[Model and math](docs/theory.md) · [Verification](docs/verification.md)
+A single tree makes a structural decision. A distribution over trees lets us inspect how
+stable that decision is. `bgforest` brings together a working Bayesian forest model,
+exact sampling for fixed graph laws, matrix-tree identities, and experiments that show
+both successes and failures.
 
-## Why it is interesting
+The statistical reference is the **Bayesian spanning forest of Duan & Roy (JASA 2024)**:
+Gaussian leaf densities with local scales, Cauchy root densities, and a weight per component.
+Wilson's algorithm replaces the paper's cover-walk sampler while retaining the same
+conditional forest law. This is a research and reproduction platform; the cited models,
+algorithms, and identities are credited to their sources.
 
-- **No shape assumption inside a cluster.** A point only needs a nearby neighbour in the
-  same tree, so moons, rings and spirals are natural, and isolated points become their own
-  trees instead of distorting a cluster.
-- **Exact forest draws.** Given the kernel, each forest is an exact sample from the
-  posterior. With fixed scales the draws are independent, with no burn-in; with the paper's
-  adaptive scales, the forest step of the Gibbs sampler is exact.
-- **Closed forms.** $\Pr[(i,j) \in \text{forest} \mid y] = A_{ij} R_{\text{eff}}(i,j)$ and
-  $\mathbb E[K \mid y] = \sum_i A_{0i} (L_g^{-1})_{ii}$, from one Cholesky factorisation.
-- **A probabilistic reading of spectral clustering.** The leading eigenvectors of the
-  edge-probability matrix match those of normalized spectral clustering (Duan & Roy,
-  Theorem 1), shown numerically below.
+## Explore an actual experiment
+
+The [interactive workbench](https://numberingeometry.github.io/bayesian-geometric-forest/explorer/)
+links sampled forests, co-clustering, assignment disagreement, edge probabilities, root
+probabilities, and Euclidean graph geometry. Three reproducible datasets include curved
+synthetic clusters and the public four-feature Iris dataset.
+
+- Switch between fixed local scales and adaptive-scale Gibbs inference.
+- Compare three precomputed values of the component weight $\lambda$.
+- Select a point to inspect its pairwise co-clustering probabilities and the full pair matrix.
+- Compare a forest with a 10-nearest-neighbour graph, Euclidean MST, and spectral coordinates.
+- Inspect the separate five-seed, six-case benchmark, timings, and run provenance.
+
+Every model control selects a real precomputed fit. The browser performs no inference.
+All probability summaries use all retained inference draws; the animation keeps a smaller,
+explicitly counted subset. The page and its [data bundle](docs/explorer/data.json) are
+self-contained and can be opened locally.
 
 ## Quick start
 
@@ -46,142 +49,114 @@ python -m pip install "git+https://github.com/numberingeometry/bayesian-geometri
 from sklearn.datasets import make_moons
 from bgforest import BayesianSpanningForest
 
-X, y = make_moons(n_samples=300, noise=0.07, random_state=1)
-model = BayesianSpanningForest(random_state=0).fit(X)   # K is inferred
+X, _ = make_moons(n_samples=200, noise=0.07, random_state=1)
+model = BayesianSpanningForest(random_state=0).fit(X)
 
-model.n_clusters_posterior_      # {1: 0.05, 2: 0.42, 3: 0.37, 4: 0.12, 5: 0.03, 6: 0.01}
-model.labels_                    # point estimate (ARI 1.0 here)
-model.co_clustering_matrix_      # Pr(i and j share a cluster | data)
-model.assignment_uncertainty()   # per-point uncertainty
-model.forests_                   # every retained forest, as parent pointers
+model.labels_                    # a point estimate
+model.n_clusters_posterior_      # Monte Carlo distribution of the number of trees
+model.co_clustering_matrix_      # estimated probability of sharing a component
+model.assignment_uncertainty()   # disagreement with the point-estimate cluster
+model.forests_                   # parent pointers; -1 marks a root
 ```
 
-This takes about ten seconds ([`examples/01_quickstart.py`](examples/01_quickstart.py)).
-Isolated points are trees of their own, which is why the posterior over $K$ has mass
-above 2.
+For independent draws with fixed scales, use `scales="local"`. In that mode,
+`model.kernel_.root_count_distribution()` also gives the exact distribution of $K$.
+Passing `n_clusters=2` sets the **final readout** to two clusters; it does **not** condition
+the posterior on $K=2$.
 
-## One posterior, four views
+## What is implemented
 
-![Data, one posterior forest, the co-clustering matrix and per-point uncertainty](figs/hero.svg)
-
-Two moons, a blob joined to one moon by a thin bridge, and a few outliers. Outliers become
-single-point trees; the bridge makes the blob and the lower moon share a cluster in a
-minority of draws, which shows up as an off-diagonal block in the co-clustering matrix and
-as raised uncertainty along the half of that moon nearest the bridge.
-
-## How it compares
-
-![Adjusted Rand index of six methods on six datasets](figs/benchmark.svg)
-
-Six methods, six datasets, five seeds; every method except "K inferred" is told the true
-number of clusters. Scores are adjusted Rand index against the generating labels; on
-"Moons + 5% outliers" every point is clustered and only the moon points are scored.
-Script: [`examples/03_benchmark.py`](examples/03_benchmark.py); numbers:
-[`figs/benchmark.csv`](figs/benchmark.csv).
-
-- **Shape-defined clusters** (moons, circles, spirals): BSF matches the best graph methods
-  (ARI 0.99–1.00) where centroid methods fail.
-- **Outliers**: cutting the minimum spanning tree spends its cuts on isolated points and
-  collapses to **0.00**; spectral clustering drops to 0.57; BSF stays at **0.99**, because
-  outliers become trees of their own. This is Duan & Roy's point that averaging over trees
-  is more robust than committing to one.
-- **Elliptical, overlapping clusters** (stretched blobs, Iris) are where a Gaussian mixture is
-  the right model, and it wins (0.86 and 0.90 against BSF's 0.53 and 0.60). A forest
-  clusters by connectivity: two touching clouds are one cluster to it.
-- **Inferring K is the hard part.** The posterior mode of $K$ is right on moons and circles,
-  but on the outlier, spiral and blob data it counts outlier trees or split arms, and that
-  point estimate drops to 0.09–0.55. The full posterior over $K$ is returned rather than
-  hidden behind one number.
-
-## Spectral clustering, read probabilistically
-
-![Eigenvectors of the forest edge-probability matrix against those of normalized spectral clustering](figs/theorem1.svg)
-
-On the three-component Gaussian mixture of Duan & Roy's Figure 2, the top three
-eigenvectors of the closed-form edge-probability matrix $M$ and of the normalized
-Laplacian agree up to a rotation, with subspace distance $\lVert\sin\Theta\rVert_F$ near
-0.05 from $n = 60$ to $n = 960$ ([`examples/04_theorem1.py`](examples/04_theorem1.py)).
-
-## Feature backbones
-
-![Spanning-tree edge probabilities for the 13 wine features](figs/backbone.svg)
-
-`SpanningTreeBackbone` gives the backbone tree of a feature dependence graph (for Gaussian
-data, the Chow–Liu tree) and the exact probability that each pair is an edge of a random
-spanning tree on a correlation kernel. It is a descriptive tool inspired by Duan & Dunson's
-Bayesian spanning tree (*JMLR* 2023), not a reproduction of that model.
-
-## Verified, not asserted
-
-Every check below compares fast code with an independent brute-force answer: all
-$N^{N-2}$ labelled trees of the augmented graph, or all set partitions. Exact identities
-are held to $10^{-10}$; sampling checks are chi-square tests at $\alpha = 0.001$ with fixed
-seeds. `python scripts/verify_exactness.py` reproduces the table, and CI runs it on every
-push. The checks cover everything that holds for a given kernel; the adaptive-scale updates
-are the paper's conjugate conditionals transcribed, and are not covered by them (inspect the
-chain traces, or run several seeds).
-
-<!-- verification:start -->
-| Check | Method | Result | |
-|---|---|---|---|
-| Matrix-tree theorem | log tau via one determinant vs sum over all m^(m-2) trees, m = 2..7 | max abs error 0.0e+00 (log scale) | PASS |
-| Partition posterior | closed form vs all 7^5 = 16,807 augmented trees, all 203 partitions of n = 6 | max abs error 1.4e-15 | PASS |
-| Edge probabilities | A_ij R_eff(i, j) vs enumeration, incl. root edges | max abs error 4.2e-15 | PASS |
-| Exact forest draws | 100,000 Wilson draws vs enumerated posterior over 62 partitions | chi-square p = 0.321, TV = 0.0042 | PASS |
-| Constrained draws | 40,000 rejection draws vs enumerated conditional posterior (26 partitions) | chi-square p = 0.872, TV = 0.0033; acceptance 0.165 vs Pr(constraints) 0.166 | PASS |
-| Duan & Roy Theorem 1 (illustration) | subspace distance (Frobenius sin-theta) between top-3 eigenvectors of M and of -N; 3-component mixture, sigma_ij = 1 | n = 60: 0.066; n = 120: 0.062; n = 240: 0.057; n = 480: 0.052; n = 960: 0.058 | shown |
-<!-- verification:end -->
-
-## Faithful to the paper, and where it is not
-
-| | Duan & Roy (2024) | `bgforest` |
+| Component | Target or purpose | Status |
 |---|---|---|
-| Model and hyper-priors | Gaussian leaves with local scales, Cauchy root, $\Pi(\mathcal T) \propto \lambda^K$ | the same, with the paper's constants |
-| Forest step | Aldous–Broder covering walk (exact) | Wilson's algorithm (exact, same law) |
-| Point estimate | mode of $K$, then a rank-$K$ symmetric non-negative factorisation | mode of $K$ (or a given $K$), then top-$K$ eigenvectors and $k$-means |
-| Fixed-kernel mode, closed forms | not discussed | independent exact draws, closed-form $M$ and $\mathbb E[K]$ |
-| Must-link / cannot-link | not in the paper | exact conditioning by rejection (an extension) |
-| Latent-forest, covariate, multi-view extensions | Sections 2.5 and 6 | not implemented |
+| `BayesianSpanningForest` | Duan–Roy Gaussian/Cauchy forest clustering | Implemented; alternative spectral + k-means point estimate |
+| `ForestKernel` | Arbitrary symmetric leaf weights and positive root weights | Exact partition weights, edge/root marginals, root attribution, and $K$ distribution |
+| `WilsonSampler` | Weighted spanning trees and rooted forests | Exact independent draws for each fixed kernel |
+| `ConstrainedBayesianSpanningForest` | Must-link / cannot-link conditioned forest | Exact fixed-kernel rejection sampler; can have low acceptance |
+| `SpanningTreeBackbone` | Correlation-weighted feature tree | Descriptive tool; not the full Duan–Dunson Bayesian model |
+| Reference benchmarks | Six clustering methods; Wilson vs weighted Aldous–Broder | Seeded datasets, scores, time, exact marginal errors, raw records |
+| Latent geometry, tensor-tree and AI applications | Separate future research tracks | Not implemented; [questions and evaluation gates](docs/research.md) |
 
-Details, derivations and practical notes: [docs/theory.md](docs/theory.md).
+## The mathematical contract
 
-## What else is in the box
+For symmetric nonnegative leaf weights $w_{ij}$ and positive root weights $a_i$, write
+$L$ for the leaf graph Laplacian, $Q=\operatorname{diag}(a)$, and $G=(L+Q)^{-1}$.
+A rooted forest with one selected root per component has probability
 
-| Component | What it does |
-|---|---|
-| `BayesianSpanningForest` | the clustering model above, scikit-learn style |
-| `ConstrainedBayesianSpanningForest` | the same posterior conditioned on must-link / cannot-link pairs; `acceptance_rate_` estimates how plausible the constraints are |
-| `ForestKernel` | augmented-graph weights, the marginal posterior of any partition, closed-form edge and root probabilities |
-| `WilsonSampler` | exact weighted spanning trees, forests with given roots, and posterior forests |
-| `SpanningTreeBackbone` | backbone tree and edge probabilities for features |
-| `bgforest.exact` | brute-force enumeration of trees and partitions, the ground truth for the tests |
+$$
+\Pr(F,R)=\frac{\prod_{e\in F}w_e\prod_{r\in R}a_r}{\det(L+Q)}.
+$$
 
-## Development
+Edge and root probabilities are $w_{ij}(G_{ii}+G_{jj}-2G_{ij})$ and $a_iG_{ii}$.
+The root-attribution matrix $GQ$ answers “which node roots this node's tree?”;
+it is **not** the co-clustering matrix. For constant $a_i=q$, summing over root choices
+introduces a factor $\prod_{C\in F}|C|$. This rooted law differs from an unrooted forest
+weighted only by $q^K\prod_e w_e$.
+
+In the Duan–Roy model, $a_i=\lambda r(y_i)$ varies with the observations. The general
+constant-$q$ graph benchmarks are a separate reference family. See the
+[derivations and model boundaries](docs/theory.md).
+
+**Exactness has a scope.** Fixed-kernel Wilson draws are independent and exact. With
+adaptive scales, each forest update is exact conditional on the scales; the joint Gibbs
+chain is correlated and needs diagnostics. A determinant evaluated at posterior mean
+scales does not equal a joint-posterior marginal.
+
+## Benchmarks you can rerun
+
+![Six clustering methods: agreement with reference labels and measured fit time](figs/benchmark.svg)
+
+The benchmark compares k-means, Gaussian mixtures, 10-NN spectral clustering, single-linkage
+MST cuts, and BSF with supplied or inferred $K$ readout. It reports ARI, adjusted mutual
+information, per-run fit time, and BSF pairwise Brier scores. A separate experiment compares
+Wilson and weighted Aldous–Broder on identical fixed graph laws, with exact edge/root
+marginal errors and small-graph partition total variation.
+
+These are transductive clustering experiments, not held-out prediction. Every method sees
+the same standardized features. Supplied-$K$ and inferred-$K$ results remain separately
+labelled. Negative reference labels are excluded from scoring while those observations
+remain in fitting. Baseline settings are fixed rather than tuned to the labels. Raw JSON
+and CSV include every requested seed, warnings, failures, environment, and timings.
 
 ```bash
-python -m pip install -e ".[dev]"
-python -m pytest                       # unit tests, including exactness against enumeration
-python scripts/verify_exactness.py     # the verification table
-python examples/02_hero.py             # regenerate a figure (all figures are SVG)
+python -m pip install -e ".[dev,docs]"
+python scripts/run_benchmarks.py --profile standard  # 5 seeds; n=300 synthetic cases
+python scripts/run_benchmarks.py --profile quick     # development / smoke comparison
+python examples/07_explorer.py                     # rebuild all 18 workbench fits
 ```
 
-`examples/` regenerates every figure and the explorer; the docs workflow only publishes
-them, so the site never re-runs a long computation.
+[Protocol and measured results](docs/benchmarks.md) · [clustering JSON](docs/results/clustering.json) ·
+[sampling JSON](docs/results/sampling.json). Shape clusters can favor graph methods;
+elliptical overlap can favor mixtures. Unknown $K$, outliers, and root-weight sensitivity
+are visible failure cases rather than exceptions removed from the report.
+
+## Verification and development
+
+```bash
+python -m ruff check bgforest tests scripts examples
+python -m pytest
+python scripts/verify_exactness.py
+mkdocs build --strict
+```
+
+Small-graph checks independently enumerate augmented labelled trees and set partitions.
+They test partition weights, edge/root marginals, exact $K$ distributions, and sampling
+frequencies. They establish fixed-kernel correctness on the tested cases, not general
+Gibbs convergence or statistical calibration on arbitrary data. See [verification](docs/verification.md).
+
+The dense kernel uses quadratic storage; factorizations and spectral readouts have cubic
+cost. Tiny root weights can produce long random walks. Sparse graph models, new geometry
+models, and quantum tensor-tree ensembles need their own explicit targets and validation.
 
 ## References
 
-- L. L. Duan and A. Roy. Spectral clustering, Bayesian spanning forest, and forest process.
-  *Journal of the American Statistical Association* 119(547):2140–2153, 2024.
-  [arXiv:2202.00493](https://arxiv.org/abs/2202.00493)
-- Y. Zheng, L. L. Duan and A. Roy. Consistency of graphical model-based clustering: robust
-  clustering using Bayesian spanning forest. Preprint,
-  [arXiv:2409.19129](https://arxiv.org/abs/2409.19129)
-- L. L. Duan and D. B. Dunson. Bayesian spanning tree: estimating the backbone of the
-  dependence graph. *JMLR* 24(397):1–44, 2023. [arXiv:2106.16120](https://arxiv.org/abs/2106.16120)
-- E. Tam, D. B. Dunson and L. L. Duan. Exact sampling of spanning trees via fast-forwarded
-  random walks. *Biometrika* 112(2):asaf031, 2025. [arXiv:2405.03096](https://arxiv.org/abs/2405.03096)
-- D. B. Wilson. Generating random spanning trees more quickly than the cover time. *STOC*, 1996.
-
-## License
+- L. L. Duan and A. Roy. *Spectral clustering, Bayesian spanning forest, and forest process.* JASA 119(547):2140–2153, 2024. [Paper](https://arxiv.org/abs/2202.00493).
+- Y. Zheng, L. L. Duan and A. Roy. *Consistency of graphical model-based clustering: robust clustering using Bayesian spanning forest.* [Preprint](https://arxiv.org/abs/2409.19129).
+- L. L. Duan and D. B. Dunson. *Bayesian spanning tree: estimating the backbone of the dependence graph.* JMLR 24(397):1–44, 2023. [Paper](https://jmlr.org/papers/v24/22-0252.html).
+- D. B. Wilson. *Generating random spanning trees more quickly than the cover time.* STOC, 1996. [DOI](https://doi.org/10.1145/237814.237880).
+- D. J. Aldous. *The random walk construction of uniform spanning trees and uniform labelled trees.* SIAM J. Discrete Math. 3(4):450–465, 1990. [DOI](https://doi.org/10.1137/0403039).
+- A. Z. Broder. *Generating random spanning trees.* FOCS, 1989. [DOI](https://doi.org/10.1109/SFCS.1989.63516).
+- P. Chebotarev and E. Shamis. *The matrix-forest theorem and measuring relations in small social groups.* Automation and Remote Control 58(9):1505–1514, 1997. [Preprint](https://arxiv.org/abs/math/0602070).
+- L. Avena and A. Gaudillière. *Random spanning forests, Markov matrix spectra and well distributed points.* [Paper](https://arxiv.org/abs/1310.1723).
+- E. Tam, D. B. Dunson and L. L. Duan. *Exact sampling of spanning trees via fast-forwarded random walks.* Biometrika 112(2):asaf031, 2025. [Paper](https://arxiv.org/abs/2405.03096). This sampler is not implemented here.
 
 MIT; see [LICENSE](LICENSE).

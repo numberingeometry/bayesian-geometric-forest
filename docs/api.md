@@ -28,8 +28,8 @@ scikit-learn style: `fit(X)`, `fit_predict(X)`, `predict_proba()`.
 |---|---|---|
 | `labels_` | $(n,)$ | point estimate |
 | `partitions_`, `forests_` | $(D, n)$ | posterior draws: cluster labels and parent pointers ($-1$ marks a root) |
-| `n_clusters_posterior_` | dict | posterior over $K$ |
-| `co_clustering_matrix_` | $(n, n)$ | $\Pr(i, j \text{ share a cluster} \mid y)$ |
+| `n_clusters_posterior_` | dict | Monte Carlo estimate of the posterior over $K$ |
+| `co_clustering_matrix_` | $(n, n)$ | Monte Carlo estimate of $\Pr(i, j \text{ share a cluster} \mid y)$ |
 | `edge_inclusion_`, `root_probability_` | $(n, n)$, $(n,)$ | edge and root probabilities (closed form for fixed scales) |
 | `n_clusters_trace_`, `root_scale_trace_`, `mean_scale_trace_` | $(\text{sweeps},)$ | chain diagnostics (adaptive scales) |
 
@@ -40,8 +40,11 @@ probability with the other members of its estimated cluster.
 
 Same parameters plus `must_link`, `cannot_link` (lists of index pairs) and
 `max_attempts`. Draws that violate a constraint are rejected, so every retained draw is
-an exact draw from the conditional posterior. `acceptance_rate_` estimates the posterior
-probability of the constraints. Contradictory constraint sets raise `ValueError`.
+an exact draw from the constraint-conditioned law for the current fixed kernel.
+Adaptive mode remains a correlated Gibbs chain. `acceptance_rate_` records accepted
+draws divided by proposal attempts; for a single fixed kernel it estimates the
+unconstrained probability of satisfying the constraints. Contradictory constraint sets
+raise `ValueError`.
 
 ## `ForestKernel`
 
@@ -49,6 +52,17 @@ probability of the constraints. Contradictory constraint sets raise `ValueError`
 Methods: `log_marginal(partition)` (unnormalised log posterior of a partition, trees
 summed out), `edge_inclusion()` (returns $M$ and the root probabilities),
 `expected_n_clusters()`, `log_tree_weight_sum(nodes)`.
+
+`root_count_distribution()` returns an array of length $n+1$ with exact fixed-kernel
+$\Pr(K=k)$ at index $k$. `root_assignment()` returns the $(n,n)$ matrix whose $(i,j)$
+entry is the probability that node $i$'s component is rooted at $j$. This matrix is not
+the co-clustering matrix. Both methods assume a fixed unconstrained kernel; applying
+them to an adaptive fit's posterior-mean-scale kernel does not integrate the posterior.
+
+For a general graph law, construct `ForestKernel(log_leaf, log_root)` directly using
+symmetric log leaf weights (diagonal `-np.inf`) and finite log root weights. Constant
+root weight $q$ means `log_root=np.full(n, np.log(q))`, a separate family from Cauchy
+observation-dependent roots. [Target-law details](theory.md#rooted-graph-laws-counts-and-attribution).
 
 ## `WilsonSampler`
 

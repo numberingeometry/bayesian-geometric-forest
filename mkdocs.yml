@@ -1,5 +1,5 @@
 site_name: bayesian-geometric-forest
-site_description: Bayesian spanning forest clustering with exact posterior tree draws, closed-form edge probabilities and brute-force verification.
+site_description: Reproducible probabilistic trees, forest clustering, graph geometry, and transparent benchmarks.
 site_author: Bobby Zhang
 site_url: https://numberingeometry.github.io/bayesian-geometric-forest/
 repo_url: https://github.com/numberingeometry/bayesian-geometric-forest
@@ -7,8 +7,11 @@ repo_name: numberingeometry/bayesian-geometric-forest
 
 theme:
   name: material
+  font: false
   features:
     - navigation.sections
+    - navigation.tabs
+    - navigation.top
     - content.code.copy
   palette:
     - media: "(prefers-color-scheme: light)"
@@ -33,6 +36,7 @@ markdown_extensions:
   - tables
   - admonition
   - attr_list
+  - md_in_html
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
@@ -40,11 +44,16 @@ markdown_extensions:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+  - javascripts/vendor/tex-svg.js
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Overview: index.md
+  - Workbench: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/
+  - Benchmarks: benchmarks.md
   - Model and math: theory.md
   - Verification: verification.md
   - API: api.md
-  - Interactive explorer: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/
+  - Research directions: research.md

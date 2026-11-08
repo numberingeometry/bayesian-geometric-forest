@@ -8,12 +8,9 @@ window.MathJax = {
   options: {
     ignoreHtmlClass: ".*|",
     processHtmlClass: "arithmatex"
-  }
+  },
+  svg: { fontCache: "global" }
 };
 
-document$.subscribe(() => {
-  MathJax.startup.output.clearCache();
-  MathJax.typesetClear();
-  MathJax.texReset();
-  MathJax.typesetPromise();
-});
+// The local MathJax SVG bundle typesets after its own startup completes. The site
+// uses ordinary page navigation; no early Material document$ callback is needed.

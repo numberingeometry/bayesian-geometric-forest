@@ -3,7 +3,8 @@
 This page separates what the cited papers establish from what this package implements
 and derives. Statements about the papers are paraphrased; consult them for exact
 assumptions. Every identity used by the code is checked against brute-force
-enumeration on the [verification page](verification.md).
+enumeration on the [verification page](verification.md). These are existing models and
+standard matrix-tree identities; this package does not claim a new statistical theory.
 
 ## The Bayesian spanning forest model (Duan & Roy, 2024)
 
@@ -76,6 +77,59 @@ clusters, $\mathbb E[K \mid y] = \sum_i A_{0i} G_{ii}$, from one Cholesky factor
 This is the matrix $M$ that appears in Duan & Roy's Theorem 1, where it is derived from
 the eigenvalues of the Laplacian.
 
+## Rooted graph laws, counts, and attribution
+
+The same implementation accepts an arbitrary symmetric nonnegative leaf graph, with
+positive root weights $a_i$. Write $L$ for the leaf graph Laplacian and
+$Q=\operatorname{diag}(a_1,\ldots,a_n)$. The rooted forest law is
+
+$$
+\Pr(F,R)=\frac{\prod_{e\in F}w_e\prod_{r\in R}a_r}{\det(L+Q)},
+\qquad G=(L+Q)^{-1}.
+$$
+
+There is exactly one selected root per component. Positive root weights make $L+Q$
+positive definite even if the leaf graph is disconnected. If every $a_i=q$, summing
+over root choices contributes $q^K\prod_{C\in F}|C|$ for an unrooted edge set. This is
+different from the unrooted fugacity law $q^K\prod_{e\in F}w_e$. In the Duan–Roy
+observation model, $a_i=\lambda r(y_i)$ is generally not constant.
+
+The standard matrix-forest identity gives **root attribution**:
+
+$$
+H_{ij}=\Pr(\text{the tree containing }i\text{ is rooted at }j)=G_{ij}a_j,
+\qquad H\mathbf 1=\mathbf 1.
+$$
+
+`ForestKernel.root_assignment()` returns $H$. Its diagonal is the root-probability
+vector. It is not the co-clustering matrix: two nodes can share a tree rooted at a third
+node, so $H_{ij}$ is a different event from sharing a component. Co-clustering is
+estimated from complete forest partitions.
+
+Because every root carries one factor of $z$, the root-count probability generating
+function is
+
+$$
+\mathbb E[z^K]=\frac{\det(L+zQ)}{\det(L+Q)}.
+$$
+
+Equivalently, if $\nu_1,\ldots,\nu_n$ are the eigenvalues of
+$Q^{1/2}GQ^{1/2}$, then $K$ has the distribution of a sum of independent Bernoulli
+variables with probabilities $\nu_i$. This is a distributional representation of the
+count, not independence of the root indicators. `root_count_distribution()` convolves
+these factors to return $\Pr(K=k)$ for $k=0,\ldots,n$; the count is at least one.
+For a common multiplier $a_i=\lambda b_i$ with fixed $b_i$,
+$\partial\mathbb E[K]/\partial\log\lambda=\operatorname{Var}(K)$.
+
+These are existing matrix-forest / determinantal identities, not new results of this
+package. The implementation is checked against finite enumeration. They apply to a
+fixed unconstrained kernel. In adaptive mode, evaluating them at posterior mean scales
+does not integrate over scale uncertainty, and rejection constraints change the target.
+
+**Readout versus conditioning.** `BayesianSpanningForest(n_clusters=k)` fixes only the
+number of groups in the final spectral + k-means decision. It leaves the sampled law
+above unchanged. Exact conditioning on $K=k$ is not implemented by that argument.
+
 ## Exact sampling of spanning trees
 
 Wilson's algorithm (1996) draws a spanning tree with probability proportional to the
@@ -137,6 +191,12 @@ Cauchy density with $u_i \sim \text{Inv-Gamma}(1/2, 1/2)$ for each root.
   that Tam, Dunson & Duan's fast-forwarded sampler targets.
 
 ## References
+
+- P. Chebotarev and E. Shamis. The matrix-forest theorem and measuring relations in
+  small social groups. *Automation and Remote Control* 58(9):1505–1514, 1997.
+  [Preprint](https://arxiv.org/abs/math/0602070).
+- L. Avena and A. Gaudillière. Random spanning forests, Markov matrix spectra and
+  well distributed points. [arXiv:1310.1723](https://arxiv.org/abs/1310.1723).
 
 - L. L. Duan and A. Roy. Spectral clustering, Bayesian spanning forest, and forest
   process. *Journal of the American Statistical Association*, 119(547):2140–2153, 2024.

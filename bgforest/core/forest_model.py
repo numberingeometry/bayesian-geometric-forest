@@ -180,6 +180,33 @@ class ForestKernel:
         """E[K | y], the sum of the root-inclusion probabilities."""
         return float(np.sum(self.edge_inclusion()[1]))
 
+    def root_assignment(self) -> np.ndarray:
+        """P(node i belongs to the tree rooted at j), for a fixed kernel.
+
+        The matrix-forest identity gives H_ij = G_ij * A_0j. Rows sum to
+        one. This is root attribution, not pairwise co-clustering.
+        """
+        L, c = self.grounded_laplacian()
+        G = cho_solve(cho_factor(L, lower=True), np.eye(self.n))
+        return G * np.exp(self.log_root - c)[None, :]
+
+    def root_count_distribution(self) -> np.ndarray:
+        """Exact P(K=k), k=0..n, for a fixed, unconstrained kernel.
+
+        E[z**K] = det(L_leaf + z Q) / det(L_leaf + Q), Q=diag(A_0i).
+        K is a sum of Bernoulli variables with probabilities the eigenvalues
+        of Q**(1/2) G Q**(1/2). This standard determinantal identity concerns
+        roots; it is not conditioning the forest on a specified K.
+        """
+        L, c = self.grounded_laplacian()
+        G = cho_solve(cho_factor(L, lower=True), np.eye(self.n))
+        a = np.exp(0.5 * (self.log_root - c))
+        eigenvalues = np.clip(np.linalg.eigvalsh(G * np.outer(a, a)), 0.0, 1.0)
+        probability = np.array([1.0])
+        for p in eigenvalues:
+            probability = np.convolve(probability, [1.0 - p, p])
+        return probability / probability.sum()
+
     def log_tree_weight_sum(self, nodes: np.ndarray) -> float:
         """log tau(V) = log sum over spanning trees of V of prod A_ij (matrix-tree theorem)."""
         nodes = np.asarray(nodes, dtype=np.int64)

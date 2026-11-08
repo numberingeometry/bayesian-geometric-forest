@@ -3,271 +3,151 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forest Posterior Explorer</title>
-<meta name="description" content="Step through exact posterior draws of a Bayesian spanning forest and see clustering uncertainty point by point.">
+<meta name="color-scheme" content="light dark">
+<title>Forest Lab · Bayesian Geometric Forest</title>
+<meta name="description" content="An interactive laboratory for Bayesian spanning forests: compare reference models, inspect sampled trees and explore uncertainty in geometric data.">
 <style>
-:root {
-  --bg: #ffffff; --panel: #f8fafc; --ink: #0f172a; --muted: #64748b; --line: #e2e8f0;
-  --accent: #2563eb; --edge-alpha: 0.85;
-  --c0: #2563eb; --c1: #e11d48; --c2: #059669; --c3: #d97706; --c4: #7c3aed; --c5: #0891b2; --cx: #94a3b8;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937;
-    --accent: #60a5fa; --c0: #60a5fa; --c1: #fb7185; --c2: #34d399; --c3: #fbbf24; --c4: #a78bfa; --c5: #22d3ee; --cx: #64748b;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0b1120; --panel: #111827; --ink: #e5e7eb; --muted: #94a3b8; --line: #1f2937;
-  --accent: #60a5fa; --c0: #60a5fa; --c1: #fb7185; --c2: #34d399; --c3: #fbbf24; --c4: #a78bfa; --c5: #22d3ee; --cx: #64748b;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink);
-  font: 15px/1.5 Inter, "Helvetica Neue", Arial, system-ui, sans-serif; }
-header { max-width: 1120px; margin: 0 auto; padding: 28px 16px 8px; }
-h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
-header p { margin: 0; color: var(--muted); max-width: 760px; }
-main { max-width: 1120px; margin: 0 auto; padding: 12px 16px 40px; display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
-@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-.tabs, .modes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-  padding: 6px 12px; border-radius: 999px; cursor: pointer; }
-button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
-svg#plot { width: 100%; height: auto; display: block; touch-action: manipulation; }
-.controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-.controls input[type=range] { flex: 1; accent-color: var(--accent); }
-.status { color: var(--muted); font-size: 13px; min-height: 20px; margin-top: 6px; }
-aside { display: flex; flex-direction: column; gap: 14px; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
-.card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 8px; }
-.card p { margin: 0 0 8px; font-size: 14px; }
-.bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; }
-.bar { flex: 1; background: var(--accent); opacity: 0.85; border-radius: 3px 3px 0 0; min-height: 1px; position: relative; }
-.bar.on { opacity: 1; outline: 2px solid var(--ink); }
-.barlabels { display: flex; gap: 4px; font-size: 11px; color: var(--muted); }
-.barlabels span { flex: 1; text-align: center; }
-.legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-.ramp { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #fde7c3, #f9845b, #b5367a, #3b0f70, #000004); }
-a { color: var(--accent); }
-footer { max-width: 1120px; margin: 0 auto; padding: 0 16px 32px; color: var(--muted); font-size: 13px; }
+:root{--paper:#f4f3ed;--surface:#fffefa;--soft:#eeeee6;--ink:#192d29;--muted:#67736c;--line:#d8ded3;--green:#147c68;--green-soft:#e0eee5;--orange:#cc6542;--stage:#f7f8f0;--shadow:0 14px 45px #273e2910;--c0:#187b69;--c1:#cf6946;--c2:#5d86b0;--c3:#aa983c;--c4:#9c6d99;--c5:#5e9192;--cx:#a1ada3}
+:root[data-theme="dark"]{--paper:#101c19;--surface:#172722;--soft:#20332c;--ink:#e5eee4;--muted:#a2b6a9;--line:#344b3e;--green:#81d8ae;--green-soft:#234d3b;--orange:#f3a37f;--stage:#12251f;--shadow:0 14px 45px #0003;--c0:#88d8b3;--c1:#f1a078;--c2:#91b4d8;--c3:#d0c77f;--c4:#c6a0c8;--c5:#88c8c5;--cx:#80968a}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button,select{color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px}button{padding:8px 13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}button:hover{border-color:var(--green);background:var(--green-soft)}button:disabled{opacity:.4;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visible{outline:2px solid var(--green);outline-offset:3px}a{color:var(--green);text-underline-offset:3px}button[aria-pressed=true]{color:var(--surface);background:var(--green);border-color:var(--green)}:root[data-theme=dark] button[aria-pressed=true]{color:#102a1d}svg{display:block}h1,h2,h3,p{margin:0}label{display:block}.shell{max-width:1510px;margin:auto;padding:0 40px}.nav{height:78px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);gap:20px}.brand{display:flex;align-items:center;gap:11px;color:var(--ink);text-decoration:none}.brandmark{width:38px;height:38px}.brandname{font-size:18px;letter-spacing:-.7px;font-weight:650}.brandname span{font-weight:400;color:var(--muted)}.navlinks{display:flex;gap:24px;align-items:center}.navlinks a{color:var(--muted);font-size:12px;text-decoration:none}.navlinks a:hover{color:var(--green)}.iconbutton{padding:7px 10px;min-width:34px;font-size:14px}.intro{padding:38px 0 28px;display:flex;align-items:flex-end;justify-content:space-between;gap:35px}.eyebrow,.label,.section-label{font-size:10px;text-transform:uppercase;letter-spacing:1.8px;font-weight:650}.eyebrow{color:var(--green);display:flex;align-items:center;gap:7px;margin-bottom:10px}.eyebrow:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}h1{font:clamp(34px,3.6vw,53px)/1.06 Georgia,"Times New Roman",serif;letter-spacing:-1.7px;font-weight:400}.intro p{margin-top:12px;max-width:610px;font-size:14px;color:var(--muted);line-height:1.65}.intro-aside{max-width:210px;font-size:11px;color:var(--muted);border-left:1px solid var(--line);padding-left:16px;line-height:1.7;margin-bottom:3px}.intro-aside strong{display:block;color:var(--ink);font-size:12px;font-weight:550}.workbench{display:grid;grid-template-columns:218px minmax(0,1fr) 265px;gap:15px;align-items:start}.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}.config{padding:20px 17px}.section-label{color:var(--muted);margin-bottom:16px}.section-label .step{color:var(--green);margin-right:8px}.label{color:var(--muted);font-size:9px;letter-spacing:1.2px;margin:20px 0 8px}.config .label:first-of-type{margin-top:0}select{width:100%;padding:10px 9px;background:var(--surface);font-size:12px}select option{background:var(--surface)}.fieldhelp{font-size:11px;color:var(--muted);line-height:1.6;margin:8px 0}.segmented{display:flex;gap:4px}.segmented button{flex:1;padding:7px 3px;font-size:11px;border-radius:5px}.metricpair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0}.metricpair b{display:block;font-size:22px;letter-spacing:-.7px;font-weight:450;line-height:1.2;font-variant-numeric:tabular-nums}.metricpair span{font-size:10px;color:var(--muted)}.case-description{font-size:11px;line-height:1.7;color:var(--muted)}.case-description strong{color:var(--ink);font-weight:550;display:block;margin-bottom:5px}.reading-link{display:block;margin-top:16px;font-size:11px}.workspace{min-width:0}.viewbar{padding:12px 12px 0;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);background:var(--surface)}.viewbar button{border:0;background:none;border-radius:5px 5px 0 0;color:var(--muted);padding:10px 9px 12px;font-size:11px;white-space:nowrap;border-bottom:2px solid transparent}.viewbar button[aria-pressed=true]{color:var(--green);background:transparent;border-bottom-color:var(--green)}.stage{position:relative;background:var(--stage);overflow:hidden;min-height:350px}.stage:before{content:"";position:absolute;inset:0;background-image:radial-gradient(var(--line) .6px,transparent .6px);background-size:18px 18px;opacity:.35;pointer-events:none}.plot-head{position:absolute;top:15px;left:18px;right:18px;display:flex;justify-content:space-between;gap:15px;z-index:1;pointer-events:none}.plot-title{font-size:12px;font-weight:550}.plot-subtitle{font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);margin-top:3px}.drawbadge{font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--surface);border:1px solid var(--line);padding:5px 7px;border-radius:5px;white-space:nowrap;height:27px;color:var(--muted)}#plot{width:100%;height:500px;display:block;touch-action:none;cursor:crosshair;position:relative}.plot-foot{position:absolute;bottom:13px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:10px;color:var(--muted);pointer-events:none}.plot-key{display:flex;gap:13px;align-items:center}.key-root{width:9px;height:9px;display:inline-block;border:1px solid var(--green);border-radius:50%;margin-right:4px;vertical-align:-1px}.key-edge{width:16px;height:1px;display:inline-block;background:var(--green);vertical-align:3px;margin-right:5px}.plot-tools{position:absolute;right:13px;bottom:40px;display:flex;flex-direction:column;gap:4px}.plot-tools button{width:30px;height:30px;padding:0;font-size:15px;background:var(--surface);box-shadow:0 1px 4px #0001}.tooltip{position:absolute;pointer-events:none;display:none;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-size:11px;z-index:3;box-shadow:var(--shadow);max-width:210px}.transport{display:flex;align-items:center;gap:10px;padding:13px 16px;border-top:1px solid var(--line)}.transport .play{padding:7px 10px;min-width:68px;font-size:11px}.transport input[type=range]{flex:1;min-width:0}.transport output{font:10px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);min-width:43px;text-align:right}input[type=range]{accent-color:var(--green);height:3px;cursor:pointer}.transport select{width:63px;padding:6px;font-size:10px}.view-controls{padding:10px 16px;display:flex;gap:10px;align-items:center;background:var(--soft);font-size:10px;color:var(--muted);border-top:1px solid var(--line)}.view-controls input{flex:1;min-width:35px}.view-controls button{padding:4px 9px;font-size:10px}.view-controls[hidden]{display:none}.caption{padding:12px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);line-height:1.6;min-height:58px}.lower-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:11px;color:var(--muted);font-size:10px}.lower-actions>span{max-width:65%}.lower-actions button{font-size:10px;padding:6px 9px}.side{display:flex;flex-direction:column;gap:14px}.side .panel{padding:17px 16px}.cardtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.cardtop h2{font-size:11px;font-weight:550;letter-spacing:-.1px}.small-label{font-size:9px;color:var(--muted);background:var(--soft);padding:3px 6px;border-radius:4px;font-variant-numeric:tabular-nums}.histogram{height:100px;display:flex;align-items:flex-end;gap:3px;padding-top:10px}.histogram .column{height:100%;flex:1;display:flex;align-items:flex-end;position:relative}.histogram .bar{width:100%;background:var(--green);opacity:.42;border-radius:3px 3px 0 0;min-height:1px}.histogram .bar.active{opacity:1}.histogram .column:hover .bar{opacity:1}.histlabels{display:flex;gap:3px;margin-top:5px;font-size:8px;color:var(--muted);font-variant-numeric:tabular-nums}.histlabels span{flex:1;text-align:center}.posterior-note{font-size:10px;line-height:1.6;color:var(--muted);margin-top:10px}.posterior-note b{color:var(--ink);font-weight:550}.matrix-wrap{position:relative;padding:0 0 0 13px}.matrix-axis{position:absolute;left:0;top:50%;font-size:8px;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg)}#matrix{display:block;width:100%;height:auto;border-radius:3px;cursor:crosshair;image-rendering:auto}.matrix-legend{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:8px;color:var(--muted)}.gradient{height:5px;flex:1;background:linear-gradient(90deg,#edf1e5,#8ec4a1,#147c68,#16483d);border-radius:2px}.point-control{display:flex;align-items:center;justify-content:space-between;margin:9px 0;font-size:10px;color:var(--muted)}.point-control input{width:57px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:4px 5px;border-radius:4px;font-size:10px}.inspector{font-size:10px;color:var(--muted);line-height:1.7}.inspector dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px}.inspector dt,.inspector dd{margin:0}.inspector dd{color:var(--ink);font-variant-numeric:tabular-nums}.bench{margin-top:32px;padding:25px 0 28px;border-top:1px solid var(--line)}.sectionhead{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:18px}.sectionhead h2{font:27px/1.15 Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:-.5px}.sectionhead p{font-size:12px;color:var(--muted);margin-top:7px;max-width:720px}.sectionhead select{width:auto;min-width:160px;max-width:230px}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}table{border-collapse:collapse;width:100%;font-size:12px}th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:550;background:var(--soft)}th,td{padding:12px 18px;border-bottom:1px solid var(--line);white-space:nowrap}tr:last-child td{border-bottom:0}td:not(:first-child){font-variant-numeric:tabular-nums}tr.ours td:first-child{color:var(--green);font-weight:550}.score{display:flex;align-items:center;gap:8px}.scoreline{height:4px;width:75px;background:var(--soft);border-radius:2px;overflow:hidden}.scoreline i{display:block;height:100%;background:var(--green)}.table-hint{display:none}.bench-note{font-size:10px;line-height:1.7;color:var(--muted);margin-top:11px}.methodology{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;border-top:1px solid var(--line);padding:28px 0 34px}.methodology h3{font-size:12px;font-weight:550;margin-bottom:8px}.methodology p{font-size:11px;color:var(--muted);line-height:1.8}.methodology a{font-size:11px}.method-number{font:11px ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--green);margin-right:8px}.formula{display:block;margin:9px 0 11px;font:italic 18px Georgia,"Times New Roman",serif;color:var(--ink)}footer{border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;padding:18px 0 27px;font-size:10px;color:var(--muted)}.footerlinks{display:flex;gap:15px}.toast{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);z-index:6;background:var(--ink);color:var(--surface);padding:10px 18px;font-size:12px;border-radius:7px;box-shadow:var(--shadow);max-width:90vw}.toast[hidden]{display:none}.empty{padding:25px;color:var(--muted);font-size:12px}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.mobile-case{display:none}@media(min-width:1600px){#plot{height:560px}}@media(max-width:1170px){.shell{padding:0 24px}.workbench{grid-template-columns:190px minmax(0,1fr)}.side{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr}.side .panel{min-width:0}.matrix-wrap{max-width:190px;margin:auto}.intro-aside{display:none}#plot{height:490px}.viewbar button{padding-left:8px;padding-right:8px}}@media(max-width:700px){.table-hint{display:block;color:var(--muted);font-size:10px;margin-bottom:8px}.shell{padding:0 14px}.nav{height:62px}.navlinks{gap:12px}.navlinks .desktop-link{display:none}.brandname{font-size:16px}.brandmark{width:31px;height:31px}.intro{padding:26px 0 22px}.intro p{font-size:12px;line-height:1.6;max-width:480px}h1{font-size:36px}.workbench{display:flex;flex-direction:column;gap:12px}.config{width:100%;display:grid;grid-template-columns:1.15fr 1fr;gap:0 14px;padding:14px}.config .section-label{grid-column:1/-1;margin-bottom:10px}.config .dataset-field{grid-column:1/-1;margin-bottom:12px}.config .label{margin:0 0 6px}.config .fieldhelp,.config .metricpair,.config .case-description,.config .reading-link{display:none}.config select{padding:8px}.workspace{width:100%}.side{display:grid;width:100%;grid-template-columns:1fr 1fr}.side .point-card{grid-column:1/-1}.side .panel{padding:14px 12px}.side .point-card .inspector dl{grid-template-columns:1fr auto 1fr auto;column-gap:12px}.viewbar{padding:5px 7px 0;gap:0}.viewbar button{font-size:10px;padding:10px 7px}#plot{height:370px}.plot-head{left:13px;right:13px;top:13px}.plot-title{font-size:11px}.plot-subtitle{font-size:8px}.drawbadge{font-size:8px;padding:4px 5px;height:23px}.plot-foot{font-size:8px;left:12px;right:12px}.transport{padding:10px 12px;gap:7px}.caption{font-size:10px;padding:10px 12px}.lower-actions>span{font-size:9px;max-width:54%}.sectionhead{align-items:start;flex-direction:column;gap:12px}.sectionhead h2{font-size:25px}.sectionhead p{font-size:11px}.sectionhead select{width:100%;max-width:none}.methodology{grid-template-columns:1fr;gap:23px}.bench{margin-top:24px}.methodology p{font-size:12px}footer{flex-direction:column;gap:8px}.histogram{height:85px}.matrix-wrap{max-width:155px}.posterior-note{font-size:9px}.scoreline{width:50px}th,td{padding:10px 12px}.mobile-case{display:block;margin-top:10px;font-size:11px;color:var(--muted)}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<header>
-  <h1>Forest Posterior Explorer</h1>
-  <p>Each cluster is a tree. Every frame below is one posterior draw of the whole forest under the
-  Bayesian spanning forest model (Duan &amp; Roy, JASA 2024): given the kernel scales, the forest is
-  drawn <strong>exactly</strong> with Wilson's algorithm, and the scales are updated by Gibbs sampling.
-  Click any point to see how often each other point shares its cluster.</p>
+<div class="shell">
+<nav class="nav" aria-label="Main navigation">
+  <a class="brand" href="../" aria-label="Bayesian Geometric Forest documentation">
+    <svg class="brandmark" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.3"><path d="M20 34V24M20 24L8 15M20 24L31 13M8 15L8 6M8 15L3 23M31 13L36 5M31 13L36 24"/></g><g fill="var(--green)"><circle cx="20" cy="34" r="2.7"/><circle cx="20" cy="24" r="2.7"/><circle cx="8" cy="15" r="2.7"/><circle cx="31" cy="13" r="2.7"/><circle cx="8" cy="6" r="2"/><circle cx="3" cy="23" r="2"/><circle cx="36" cy="5" r="2"/><circle cx="36" cy="24" r="2"/></g></svg>
+    <span class="brandname">forest<span> / lab</span></span>
+  </a>
+  <div class="navlinks"><a href="#benchmarks">Benchmarks</a><a class="desktop-link" href="../theory/">The mathematics</a><a class="desktop-link" href="https://github.com/numberingeometry/bayesian-geometric-forest">GitHub</a><button id="theme" class="iconbutton" aria-label="Switch color theme" title="Switch color theme">Dark</button></div>
+</nav>
+<header class="intro">
+  <div><div class="eyebrow">Bayesian Geometric Forest · experimental hub</div><h1>One dataset. Many possible forests.</h1><p>Explore the structure that persists across sampled trees. Compare reference models, inspect their uncertainty, and see where a single clustering leaves things out.</p></div>
+  <div class="intro-aside"><strong>Explore. Compare. Reproduce.</strong>Every view is backed by saved model output. The mathematics and experiments are available alongside the code.</div>
 </header>
 <main>
-  <section>
-    <div class="tabs" id="tabs" role="group" aria-label="Dataset"></div>
-    <div class="modes" id="modes" role="group" aria-label="View">
-      <button data-mode="draws" aria-pressed="true">Posterior draws</button>
-      <button data-mode="cocluster" aria-pressed="false">Co-clustering with a point</button>
-      <button data-mode="uncertainty" aria-pressed="false">Assignment uncertainty</button>
-    </div>
-    <div class="stage"><svg id="plot" viewBox="0 0 760 460" role="img" aria-label="Scatter plot of the data with posterior forest"></svg></div>
-    <div class="controls">
-      <button id="play" aria-label="Play or pause">Pause</button>
-      <input id="slider" type="range" min="0" max="0" value="0" aria-label="Posterior draw">
-    </div>
-    <div class="status" id="status"></div>
-  </section>
-  <aside>
-    <div class="card">
-      <h2>Posterior over K</h2>
-      <div class="bars" id="bars"></div>
-      <div class="barlabels" id="barlabels"></div>
-      <p class="status" id="kinfo"></p>
-    </div>
-    <div class="card" id="explain"></div>
-    <div class="card">
-      <h2>Colour scale</h2>
-      <div class="legend"><span id="lo">0</span><div class="ramp"></div><span id="hi">1</span></div>
-    </div>
+<div class="workbench">
+  <aside class="config panel" aria-label="Experiment settings">
+    <div class="section-label"><span class="step">01</span> Experiment</div>
+    <div class="dataset-field"><label class="label" for="dataset">Dataset</label><select id="dataset"></select></div>
+    <div><label class="label" for="model">Kernel scales</label><select id="model"></select><p class="fieldhelp" id="model-help"></p></div>
+    <div><div class="label" id="lambda-label">Root weight λ</div><div class="segmented" id="lambdas" role="group" aria-labelledby="lambda-label"></div><p class="fieldhelp">Controls the relative weight of roots. More roots means more trees.</p></div>
+    <div class="metricpair"><div><b id="point-count">—</b><span>observations</span></div><div><b id="feature-count">—</b><span>input dimensions</span></div></div>
+    <div class="case-description"><strong id="case-name"></strong><span id="case-about"></span></div>
+    <a class="reading-link" href="../theory/">Read the model assumptions</a>
   </aside>
+  <section class="workspace" aria-label="Forest visualization">
+    <div class="panel">
+      <div id="modes" class="viewbar" role="group" aria-label="Visualization view">
+        <button data-mode="draws" aria-pressed="true">Forest draws</button><button data-mode="edges" aria-pressed="false">Edge probabilities</button><button data-mode="cocluster" aria-pressed="false">Co-clustering</button><button data-mode="uncertainty" aria-pressed="false">Uncertainty</button><button data-mode="geometry" aria-pressed="false">Geometry</button>
+      </div>
+      <div class="stage">
+        <div class="plot-head"><div><div class="plot-title" id="plot-title">A sample from the forest posterior</div><div class="plot-subtitle" id="plot-subtitle"></div></div><div class="drawbadge" id="drawbadge"></div></div>
+        <canvas id="plot" role="img" aria-label="Interactive plot of posterior forests. Use the point number field to inspect an observation with the keyboard." tabindex="0"></canvas>
+        <div id="tooltip" class="tooltip"></div>
+        <div class="plot-tools"><button id="zoom-in" aria-label="Zoom in" title="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out" title="Zoom out">−</button><button id="reset-view" aria-label="Reset view" title="Reset view">⌂</button></div>
+        <div class="plot-foot"><span class="plot-key" id="plot-key"><span><i class="key-root"></i> Root</span><span><i class="key-edge"></i> Sampled edge</span></span><span>Scroll to zoom · drag to pan</span></div>
+      </div>
+      <div class="view-controls" id="edge-controls" hidden><label for="threshold">Minimum edge probability</label><input id="threshold" type="range" min="0" max="1" step="0.01" value="0.10"><output id="threshold-value">0.10</output></div>
+      <div class="view-controls" id="geometry-controls" hidden><span>Reference graph</span><button data-geometry="knn" aria-pressed="true">k-NN</button><button data-geometry="mst" aria-pressed="false">MST</button><button data-geometry="spectral" aria-pressed="false">Spectral view</button></div>
+      <div class="transport"><button class="play" id="play" aria-label="Play posterior draws">Play</button><input id="slider" type="range" min="0" max="0" value="0" aria-label="Posterior draw"><output id="draw-index">1 / 40</output><select id="speed" aria-label="Playback speed"><option value="1500">0.5×</option><option value="900" selected>1×</option><option value="450">2×</option></select></div>
+      <p class="caption" id="status" aria-live="polite"></p>
+    </div>
+    <div class="lower-actions"><span id="provenance-note">Saved posterior samples · no server required</span><div><button id="share">Share view</button> <button id="export">Export figure</button></div></div>
+    <p class="mobile-case" id="mobile-case"></p>
+  </section>
+  <aside class="side" aria-label="Linked posterior summaries">
+    <section class="panel"><div class="cardtop"><h2>How many trees?</h2><span class="small-label" id="mean-k">E[K] —</span></div><div class="histogram" id="histogram" role="img" aria-label="Posterior distribution of the number of trees"></div><div class="histlabels" id="histlabels"></div><p class="posterior-note" id="kinfo"></p></section>
+    <section class="panel"><div class="cardtop"><h2>Which points stay together?</h2><span class="small-label">pairwise</span></div><div class="matrix-wrap"><span class="matrix-axis">observations</span><canvas id="matrix" width="400" height="400" role="img" aria-label="Pairwise co-clustering matrix, ordered by the point-estimate labels. Click to select a point."></canvas></div><div class="matrix-legend"><span>0</span><div class="gradient"></div><span>1</span></div><p class="posterior-note">Ordered by the clustering readout. Click a row to inspect its observation.</p></section>
+    <section class="panel point-card"><div class="cardtop"><h2>Observation inspector</h2><span class="small-label" id="focus-label">—</span></div><div class="point-control"><label for="focus">Selected point</label><input id="focus" type="number" min="0" value="0" aria-label="Selected point number"></div><div class="inspector"><dl><dt>Root probability</dt><dd id="root-prob">—</dd><dt>Assignment uncertainty</dt><dd id="point-uncertainty">—</dd><dt>Readout cluster</dt><dd id="point-cluster">—</dd><dt>Neighbors in this draw</dt><dd id="point-degree">—</dd></dl></div></section>
+  </aside>
+</div>
+<section class="bench" id="benchmarks">
+  <div class="sectionhead"><div><div class="eyebrow">Reference experiments</div><h2>Compare methods across six reference datasets.</h2><p id="benchmark-description">A separate repeated-seed benchmark compares clustering agreement and computation time under fixed settings.</p><p><a href="../benchmarks/">Full protocol and downloadable results</a></p></div><select id="benchmark-dataset" aria-label="Benchmark dataset"></select></div>
+  <p class="table-hint">Swipe the table to see all metrics.</p>
+  <div class="tablewrap" role="region" aria-label="Benchmark results; scroll horizontally for all metrics" tabindex="0"><table><thead><tr><th>Method</th><th>Adjusted Rand index ↑</th><th>Adjusted mutual information ↑</th><th>Median time</th><th>Runs</th></tr></thead><tbody id="benchmark-body"></tbody></table><div id="benchmark-empty" class="empty" hidden>No benchmark results are embedded in this build. The reproducible experiment is available in the repository.</div></div>
+  <p class="bench-note" id="benchmark-note">Scores describe these datasets and experimental settings. They do not establish a universal ranking. Oracle-K readouts and inferred-K methods are reported separately.</p>
+</section>
+<section class="methodology" aria-label="How to read the experiment">
+  <article><h3><span class="method-number">01</span>A distribution over structure</h3><span class="formula">P(T | A) ∝ ∏<sub>(i,j) ∈ T</sub> A<sub>ij</sub></span><p>The Bayesian spanning forest of Duan &amp; Roy represents clusters as rooted trees. An auxiliary root connects those trees into a weighted spanning tree with kernel A. Sampling the structure exposes alternatives that one selected partition cannot show.</p><a href="../theory/">The model and its derivation</a></article>
+  <article><h3><span class="method-number">02</span>Exactness has a scope</h3><p>Wilson's algorithm draws a forest exactly conditional on its kernel scales. Fixed-scale draws are independent; adaptive scales use a Gibbs chain. The displayed probabilities are either conditional closed forms or estimates from retained draws, as marked in the selected view. Changing λ selects a separately computed run.</p></article>
+  <article><h3><span class="method-number">03</span>Geometry is a different question</h3><p>The reference graphs show neighborhood connectivity and a minimum spanning tree. A spectral view changes the display coordinates, not the fitted posterior. These are reference experiments for studying geometry; no manifold-recovery or new-method claim is implied.</p><a href="https://github.com/numberingeometry/bayesian-geometric-forest">Reproduce the experiments</a></article>
+</section>
 </main>
-<footer>
-  Generated by <code>examples/07_explorer.py</code> in
-  <a href="https://github.com/numberingeometry/bayesian-geometric-forest">bayesian-geometric-forest</a>.
-  The data are embedded in this page; nothing is fetched.
-</footer>
+<footer><span>Bayesian Geometric Forest · an open experimental hub</span><div class="footerlinks"><a href="../">Documentation</a><a href="../verification/">Verification</a><a href="https://arxiv.org/abs/2202.00493">Duan &amp; Roy, 2024</a><a href="https://github.com/numberingeometry/bayesian-geometric-forest">Source code</a></div></footer>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
 <script>
 const DATA = /*DATA*/null;
-const NS = "http://www.w3.org/2000/svg";
-const W = 760, H = 460, PAD = 22;
-const svg = document.getElementById("plot");
-const state = { ds: 0, mode: "draws", draw: 0, focus: null, playing: true, timer: null };
-const RAMP = ["#fde7c3", "#f9845b", "#b5367a", "#3b0f70", "#000004"];
-
-function rampColor(t) {
-  t = Math.max(0, Math.min(1, t)) * (RAMP.length - 1);
-  const i = Math.min(RAMP.length - 2, Math.floor(t)), f = t - i;
-  const a = hex(RAMP[i]), b = hex(RAMP[i + 1]);
-  return `rgb(${a.map((v, k) => Math.round(v + f * (b[k] - v))).join(",")})`;
+const $=id=>document.getElementById(id);
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state={ds:0,run:0,mode:'draws',draw:0,focus:null,playing:false,timer:null,geometry:'knn',threshold:.1,zoom:1,pan:[0,0],hover:null};
+const canvas=$('plot'),ctx=canvas.getContext('2d'),matrix=$('matrix'),mctx=matrix.getContext('2d');
+let size={w:700,h:500},positions=[],drawTransition=0,previousParent=null,raf=0,drag=null,pointerMoved=false;
+const cache=new WeakMap();
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function currentDataset(){return DATA.datasets[state.ds];}
+function runs(ds=currentDataset()){if(ds.runs?.length)return ds.runs;return [Object.assign({},ds,{id:'adaptive-default',mode:'adaptive',lam:.5,label:'Adaptive scales',n_draws:ds.partitions.length,co_counts_denominator:ds.partitions.length})];}
+let runLists=DATA.datasets.map(d=>runs(d));
+function currentRun(){return runLists[state.ds][state.run];}
+function variable(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function palette(){return Array.from({length:6},(_,i)=>variable('--c'+i));}
+function hex(c){return [1,3,5].map(i=>parseInt(c.slice(i,i+2),16));}
+function mix(a,b,t){const aa=hex(a),bb=hex(b);return `rgb(${aa.map((v,i)=>Math.round(v+(bb[i]-v)*t)).join(',')})`;}
+function heat(t){const stops=['#edf1e5','#8ec4a1','#147c68','#16483d'];t=Math.max(0,Math.min(1,t))*3;const i=Math.min(2,Math.floor(t));return mix(stops[i],stops[i+1],t-i);}
+function uncertaintyColor(t){return mix(document.documentElement.dataset.theme==='dark'?'#4c7665':'#c5ddd0',document.documentElement.dataset.theme==='dark'?'#f0a27b':'#b84928',Math.max(0,Math.min(1,t)));}
+function partition(parent){const root=Array(parent.length).fill(-1);for(let v=0;v<parent.length;v++){let u=v,path=[];while(root[u]<0&&parent[u]>=0){path.push(u);u=parent[u];}const r=root[u]>=0?root[u]:u;root[u]=r;path.forEach(w=>root[w]=r);}return root;}
+function getCache(run=currentRun(),ds=currentDataset()){
+ if(cache.has(run))return cache.get(run);
+ const n=ds.n||ds.xy.length;let C;
+ if(run.co_counts){const denominator=run.co_counts_denominator||run.n_draws;C=run.co_counts.map(row=>Float32Array.from(row,v=>v/denominator));}
+ else{C=Array.from({length:n},()=>new Float32Array(n));for(const p of run.partitions){for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(p[i]===p[j])C[i][j]++;}for(const row of C)for(let j=0;j<n;j++)row[j]/=run.partitions.length;}
+ let edges=run.edges;
+ if(!edges){const counts=new Map();for(const par of run.draws)par.forEach((p,i)=>{if(p>=0){const a=Math.min(i,p),b=Math.max(i,p),key=a+','+b;counts.set(key,(counts.get(key)||0)+1);}});edges=Array.from(counts,([key,count])=>[...key.split(',').map(Number),count/run.draws.length]);}
+ const order=Array.from({length:n},(_,i)=>i).sort((a,b)=>run.labels[a]-run.labels[b]||a-b);
+ const root=run.root_probability||Array.from({length:n},(_,i)=>run.draws.reduce((s,p)=>s+(p[i]<0),0)/run.draws.length);
+ const result={C,edges,order,root};cache.set(run,result);return result;
 }
-function hex(h) { return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
-function cvar(k) { return `var(--c${k < 6 ? k : "x"})`; }
-
-function project(ds) {
-  const xs = ds.xy.map(p => p[0]), ys = ds.xy.map(p => p[1]);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const s = Math.min((W - 2 * PAD) / (x1 - x0), (H - 2 * PAD) / (y1 - y0));
-  const ox = (W - s * (x1 - x0)) / 2, oy = (H - s * (y1 - y0)) / 2;
-  return ds.xy.map(([x, y]) => [ox + s * (x - x0), H - (oy + s * (y - y0))]);
+function project(){const ds=currentDataset();let xy=state.mode==='geometry'&&state.geometry==='spectral'&&ds.geometry?.spectral_xy?ds.geometry.spectral_xy:ds.xy;const xs=xy.map(p=>p[0]),ys=xy.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const padX=42,padY=74;const s=Math.min((size.w-2*padX)/Math.max(1e-9,x1-x0),(size.h-2*padY)/Math.max(1e-9,y1-y0));const cx=(x0+x1)/2,cy=(y0+y1)/2;return xy.map(([x,y])=>[size.w/2+(x-cx)*s*state.zoom+state.pan[0],size.h/2-(y-cy)*s*state.zoom+state.pan[1]+8]);}
+function treeColors(parent){const run=currentRun(),p=partition(parent),groups=new Map(),colors=Array(parent.length),pal=palette();p.forEach((r,i)=>{if(!groups.has(r))groups.set(r,[]);groups.get(r).push(i);});for(const members of groups.values()){if(members.length<3){members.forEach(i=>colors[i]=variable('--cx'));continue;}const counts=new Map();members.forEach(i=>counts.set(run.labels[i],(counts.get(run.labels[i])||0)+1));const best=[...counts].sort((a,b)=>b[1]-a[1])[0][0];members.forEach(i=>colors[i]=pal[((best%pal.length)+pal.length)%pal.length]);}return colors;}
+function line(a,b,color,width=1,alpha=1){ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(...positions[a]);ctx.lineTo(...positions[b]);ctx.stroke();}
+function renderCanvas(now=performance.now()){
+ const ds=currentDataset(),run=currentRun(),parent=run.draws[state.draw],memo=getCache();positions=project();ctx.clearRect(0,0,size.w,size.h);const pal=palette(),green=variable('--green'),ink=variable('--ink');let colors=run.labels.map(k=>pal[((k%6)+6)%6]);let transition=reduce?1:Math.min(1,(now-drawTransition)/350);
+ if(state.mode==='draws'){
+  colors=treeColors(parent);
+  if(previousParent&&transition<1){const oldColors=treeColors(previousParent);previousParent.forEach((p,i)=>{if(p>=0)line(i,p,oldColors[i],1.25,.45*(1-transition));});}
+  parent.forEach((p,i)=>{if(p>=0)line(i,p,colors[i],state.focus===i||state.focus===p?2:1.3,.3+.55*transition);});
+ }else if(state.mode==='edges'){
+  colors=Array(ds.xy.length).fill(green);const filtered=memo.edges.filter(e=>e[2]>=state.threshold);for(const [i,j,p] of filtered)line(i,j,green,.6+2.5*p,.12+.75*p);
+ }else if(state.mode==='cocluster'){colors=Array.from(memo.C[state.focus??run.default_focus??0],heat);}
+ else if(state.mode==='uncertainty'){colors=run.uncertainty.map(uncertaintyColor);}
+ else if(state.mode==='geometry'){const geometry=ds.geometry||{};const edges=state.geometry==='mst'?geometry.mst_edges:geometry.knn_edges;for(const [i,j] of edges||[])line(i,j,variable('--muted'),state.geometry==='mst'?1.5:.8,state.geometry==='mst'?.6:.14);}
+ positions.forEach(([x,y],i)=>{if(x<-10||x>size.w+10||y<-10||y>size.h+10)return;const r=state.mode==='uncertainty'?3+3*run.uncertainty[i]:3.15;ctx.globalAlpha=1;ctx.fillStyle=colors[i];ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();});
+ if(state.mode==='draws')parent.forEach((p,i)=>{if(p<0){ctx.strokeStyle=colors[i];ctx.lineWidth=1.1;ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(...positions[i],6.4,0,Math.PI*2);ctx.stroke();}});
+ if(state.focus!==null){const [x,y]=positions[state.focus];ctx.globalAlpha=1;ctx.strokeStyle=ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=variable('--surface');ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.stroke();}
+ if(state.hover!==null&&state.hover!==state.focus){ctx.globalAlpha=.7;ctx.strokeStyle=ink;ctx.lineWidth=1;ctx.beginPath();ctx.arc(...positions[state.hover],7,0,Math.PI*2);ctx.stroke();}
+ ctx.globalAlpha=1;if(transition<1&&state.mode==='draws')raf=requestAnimationFrame(renderCanvas);
 }
-
-function partition(parent) {
-  const n = parent.length, root = new Array(n).fill(-1);
-  for (let v = 0; v < n; v++) {
-    let u = v; const path = [];
-    while (root[u] < 0 && parent[u] >= 0) { path.push(u); u = parent[u]; }
-    const r = root[u] >= 0 ? root[u] : u;
-    root[u] = r; path.forEach(w => root[w] = r);
-  }
-  return root;
-}
-
-function treeColors(ds, parent) {
-  // Colour each tree by the point-estimate cluster most of its members carry.
-  const root = partition(parent), groups = {};
-  root.forEach((r, i) => (groups[r] = groups[r] || []).push(i));
-  const col = new Array(parent.length);
-  Object.values(groups).forEach(members => {
-    if (members.length < 6) { members.forEach(i => col[i] = "var(--cx)"); return; }
-    const counts = {};
-    members.forEach(i => counts[ds.labels[i]] = (counts[ds.labels[i]] || 0) + 1);
-    const best = +Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-    members.forEach(i => col[i] = cvar(best));
-  });
-  return col;
-}
-
-function coclustering(ds, i) {
-  const n = ds.labels.length, out = new Float64Array(n);
-  ds.partitions.forEach(lab => { const li = lab[i]; for (let j = 0; j < n; j++) if (lab[j] === li) out[j] += 1; });
-  return out.map(v => v / ds.partitions.length);
-}
-
-function render() {
-  const ds = DATA.datasets[state.ds], P = project(ds), n = P.length;
-  svg.replaceChildren();
-  const parent = ds.draws[state.draw];
-  let fill = new Array(n).fill(null), r = new Array(n).fill(3.2);
-  if (state.mode === "draws") {
-    const col = treeColors(ds, parent);
-    const byColor = {};
-    parent.forEach((p, i) => { if (p >= 0) (byColor[col[i]] = byColor[col[i]] || []).push(`M${P[i][0].toFixed(1)} ${P[i][1].toFixed(1)}L${P[p][0].toFixed(1)} ${P[p][1].toFixed(1)}`); });
-    Object.entries(byColor).forEach(([c, segs]) => {
-      const path = document.createElementNS(NS, "path");
-      path.setAttribute("d", segs.join("")); path.setAttribute("stroke", c); path.setAttribute("fill", "none");
-      path.setAttribute("stroke-width", "1.4"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("opacity", "0.9");
-      svg.appendChild(path);
-    });
-    fill = col;
-    const K = parent.filter(p => p < 0).length;
-    document.getElementById("status").textContent = `Draw ${state.draw + 1} of ${ds.draws.length}: ${K} trees. Rings mark the roots.`;
-  } else if (state.mode === "cocluster") {
-    const i = state.focus ?? ds.default_focus;
-    const p = coclustering(ds, i);
-    fill = Array.from(p, v => rampColor(v));
-    document.getElementById("status").textContent = `Pr(point j shares a cluster with the outlined point), over ${ds.partitions.length} draws. Click another point.`;
-  } else {
-    fill = ds.uncertainty.map(u => rampColor(u / 0.5));
-    r = ds.uncertainty.map(u => 3 + 2.5 * Math.min(1, u / 0.5));
-    document.getElementById("status").textContent = "1 minus the average co-clustering with the rest of the point's estimated cluster.";
-  }
-  P.forEach(([x, y], i) => {
-    const c = document.createElementNS(NS, "circle");
-    c.setAttribute("cx", x.toFixed(1)); c.setAttribute("cy", y.toFixed(1)); c.setAttribute("r", r[i]);
-    c.setAttribute("fill", fill[i]);
-    const t = document.createElementNS(NS, "title");
-    t.textContent = `point ${i}: uncertainty ${ds.uncertainty[i].toFixed(2)}`;
-    c.appendChild(t); svg.appendChild(c);
-  });
-  if (state.mode === "draws") {
-    parent.forEach((p, i) => { if (p < 0) {
-      const c = document.createElementNS(NS, "circle");
-      c.setAttribute("cx", P[i][0].toFixed(1)); c.setAttribute("cy", P[i][1].toFixed(1)); c.setAttribute("r", 6.5);
-      c.setAttribute("fill", "none"); c.setAttribute("stroke", fill[i]); c.setAttribute("stroke-width", 1.8);
-      c.setAttribute("pointer-events", "none"); svg.appendChild(c); } });
-  }
-  if (state.mode === "cocluster") {
-    const i = state.focus ?? ds.default_focus;
-    const c = document.createElementNS(NS, "circle");
-    c.setAttribute("cx", P[i][0]); c.setAttribute("cy", P[i][1]); c.setAttribute("r", 9);
-    c.setAttribute("fill", "none"); c.setAttribute("stroke", "var(--ink)"); c.setAttribute("stroke-width", 2);
-    c.setAttribute("pointer-events", "none"); svg.appendChild(c);
-  }
-  document.getElementById("lo").textContent = "0";
-  document.getElementById("hi").textContent = state.mode === "uncertainty" ? "≥ 0.5" : "1";
-}
-
-function renderSide() {
-  const ds = DATA.datasets[state.ds];
-  const ks = Object.keys(ds.k_posterior).map(Number).sort((a, b) => a - b);
-  const kmin = ks[0], kmax = ks[ks.length - 1], vals = [];
-  for (let k = kmin; k <= kmax; k++) vals.push([k, ds.k_posterior[k] || 0]);
-  const top = Math.max(...vals.map(v => v[1]));
-  const bars = document.getElementById("bars"), labels = document.getElementById("barlabels");
-  bars.replaceChildren(); labels.replaceChildren();
-  vals.forEach(([k, v]) => {
-    const b = document.createElement("div"); b.className = "bar"; b.style.height = `${(100 * v / top).toFixed(1)}%`;
-    b.title = `K = ${k}: ${(100 * v).toFixed(1)}%`; bars.appendChild(b);
-    const s = document.createElement("span"); s.textContent = k; labels.appendChild(s);
-  });
-  document.getElementById("kinfo").textContent = `${ds.n} points, ${ds.partitions.length} retained draws. ${ds.k_note}`;
-  document.getElementById("explain").innerHTML = `<h2>${ds.name}</h2><p>${ds.about}</p>`;
-}
-
-function setMode(m) {
-  state.mode = m;
-  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m));
-  render();
-}
-function setDataset(i) {
-  state.ds = i; state.draw = 0; state.focus = null;
-  document.querySelectorAll("#tabs button").forEach((b, k) => b.setAttribute("aria-pressed", k === i));
-  const slider = document.getElementById("slider");
-  slider.max = DATA.datasets[i].draws.length - 1; slider.value = 0;
-  renderSide(); render();
-}
-function tick() {
-  if (state.mode !== "draws") return;
-  const ds = DATA.datasets[state.ds];
-  state.draw = (state.draw + 1) % ds.draws.length;
-  document.getElementById("slider").value = state.draw; render();
-}
-function setPlaying(on) {
-  state.playing = on; clearInterval(state.timer);
-  document.getElementById("play").textContent = on ? "Pause" : "Play";
-  if (on) state.timer = setInterval(tick, 900);
-}
-
-DATA.datasets.forEach((ds, i) => {
-  const b = document.createElement("button"); b.textContent = ds.name; b.setAttribute("aria-pressed", i === 0);
-  b.addEventListener("click", () => setDataset(i)); document.getElementById("tabs").appendChild(b);
-});
-document.querySelectorAll("#modes button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
-// A click anywhere on the plot selects the nearest point, so small dots are easy to hit.
-svg.style.cursor = "pointer";
-svg.addEventListener("click", e => {
-  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-  const P = project(DATA.datasets[state.ds]);
-  let best = 0, bd = Infinity;
-  P.forEach(([x, y], i) => { const d = (x - p.x) ** 2 + (y - p.y) ** 2; if (d < bd) { bd = d; best = i; } });
-  if (bd > 30 * 30) return;
-  state.focus = best; setPlaying(false); setMode("cocluster");
-});
-document.getElementById("slider").addEventListener("input", e => { state.draw = +e.target.value; setPlaying(false); setMode("draws"); });
-document.getElementById("play").addEventListener("click", () => { setPlaying(!state.playing); if (state.playing) setMode("draws"); });
-const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-setDataset(0); setPlaying(!reduce);
+function drawMatrix(){const run=currentRun(),memo=getCache(),n=memo.order.length;if(!memo.matrixImage){const off=document.createElement('canvas');off.width=n;off.height=n;const oc=off.getContext('2d');const img=oc.createImageData(n,n);for(let i=0;i<n;i++)for(let j=0;j<n;j++){const c=heat(memo.C[memo.order[i]][memo.order[j]]).match(/\d+/g).map(Number),idx=(i*n+j)*4;img.data.set([...c,255],idx);}oc.putImageData(img,0,0);memo.matrixImage=off;}mctx.imageSmoothingEnabled=false;mctx.clearRect(0,0,400,400);mctx.drawImage(memo.matrixImage,0,0,400,400);if(state.focus!==null){const k=memo.order.indexOf(state.focus),pos=(k+.5)*400/n;mctx.strokeStyle=variable('--orange');mctx.lineWidth=1.6;mctx.beginPath();mctx.moveTo(0,pos);mctx.lineTo(400,pos);mctx.moveTo(pos,0);mctx.lineTo(pos,400);mctx.stroke();}}
+function renderHistogram(){const run=currentRun(),post=run.k_posterior,ks=Object.keys(post).map(Number).sort((a,b)=>a-b),max=Math.max(...Object.values(post)),lo=ks[0],hi=ks.at(-1),K=run.draws[state.draw].filter(p=>p<0).length;let html='',labels='';for(let k=lo;k<=hi;k++){const v=post[k]||0;html+=`<div class="column" title="K = ${k}: ${(100*v).toFixed(1)}%"><div class="bar ${k===K&&state.mode==='draws'?'active':''}" style="height:${100*v/max}%"></div></div>`;labels+=`<span>${k}</span>`;}$('histogram').innerHTML=html;$('histlabels').innerHTML=labels;const mean=run.expected_k??ks.reduce((s,k)=>s+k*post[k],0);$('mean-k').textContent='E[K] '+mean.toFixed(2);const mode=ks.reduce((a,b)=>post[a]>post[b]?a:b);$('kinfo').innerHTML=`Most probable count: <b>${mode} trees</b>. Isolated points count as trees. The clustering readout uses <b>${new Set(run.labels).size} groups</b>; it does not constrain the sampled K.`;}
+function renderInspector(){const run=currentRun(),i=state.focus??run.default_focus??0,memo=getCache(),parent=run.draws[state.draw];$('focus').value=i;$('focus').max=currentDataset().xy.length-1;$('focus-label').textContent='point '+i;$('root-prob').textContent=(100*memo.root[i]).toFixed(1)+'%';$('point-uncertainty').textContent=run.uncertainty[i].toFixed(3);$('point-cluster').textContent=run.labels[i];$('point-degree').textContent=(parent[i]>=0?1:0)+parent.filter(p=>p===i).length;}
+function renderLabels(){const ds=currentDataset(),run=currentRun(),K=run.draws[state.draw].filter(p=>p<0).length;const titles={draws:'A sample from the forest posterior',edges:'Edges that persist across forests',cocluster:'Sharing a component with the selected point',uncertainty:'Where the clustering readout is uncertain',geometry:'The geometry behind the graph'};$('plot-title').textContent=titles[state.mode];$('plot-subtitle').textContent=state.mode==='geometry'&&state.geometry==='spectral'?'Spectral coordinates of the reference graph; fitted memberships unchanged.':ds.display_note||`${ds.n||ds.xy.length} observations · 2D display`;$('drawbadge').textContent=state.mode==='draws'?K+' trees':state.mode==='edges'?getCache().edges.filter(e=>e[2]>=state.threshold).length+' edges':state.mode==='geometry'?({knn:'k-NN',mst:'MST',spectral:'Spectral'})[state.geometry]:'point '+(state.focus??run.default_focus??0);$('draw-index').textContent=(state.draw+1)+' / '+run.draws.length;$('slider').value=state.draw;const exact=run.edge_probability_kind||'estimated from the displayed forest draws';const statuses={draws:`Draw ${state.draw+1} of ${run.draws.length} displayed forests. Rings mark roots; edge colors follow the clustering readout. The full summaries use ${run.n_draws||run.partitions.length} posterior draws.`,edges:`Edge inclusion probabilities: ${exact}. Showing saved edges with probability ≥ ${state.threshold.toFixed(2)}. ${run.edge_display_note||''} Edge inclusion and co-clustering are different quantities.`,cocluster:`Color is the estimated probability of sharing a component with point ${state.focus??run.default_focus??0}, across ${run.co_counts_denominator||run.n_draws||run.partitions.length} draws. Click a point or the matrix to change the selection.`,uncertainty:"Assignment uncertainty is one minus mean co-clustering with other members of the point's clustering readout. It is a descriptive agreement score, not a calibrated error probability.",geometry:state.geometry==='spectral'?'Spectral coordinates of the reference graph; the fitted posterior and memberships are unchanged.':state.geometry==='mst'?'A minimum spanning tree connects every observation with minimum total edge length. This deterministic reference is not a draw from the Bayesian posterior.':'A k-nearest-neighbor reference graph illustrates local connectivity. The reference graph is distinct from the graph used by the fitted forest model.'};$('status').textContent=statuses[state.mode];$('plot-key').innerHTML=state.mode==='draws'?'<span><i class="key-root"></i> Root</span><span><i class="key-edge"></i> Sampled edge</span>':state.mode==='cocluster'?'<span>Light → dark: 0 → 1 probability</span>':state.mode==='uncertainty'?'<span>Green → copper: 0 → 1 uncertainty</span>':state.mode==='edges'?'<span>Stronger edge → larger inclusion probability</span>':'<span>Colors: fitted clustering readout</span>';$('provenance-note').textContent=`${run.n_draws||run.partitions.length} posterior draws · ${run.draws.length} shown · ${run.mode==='local'?'fixed':'adaptive'} scales`;$('edge-controls').hidden=state.mode!=='edges';$('geometry-controls').hidden=state.mode!=='geometry';}
+function render(){cancelAnimationFrame(raf);renderCanvas();renderLabels();renderHistogram();renderInspector();drawMatrix();}
+function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);size={w:rect.width,h:rect.height};canvas.width=Math.round(size.w*dpr);canvas.height=Math.round(size.h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);renderCanvas();}
+function setMode(mode){state.mode=mode;if(mode!=='draws')setPlaying(false);document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));if(mode==='cocluster'&&state.focus===null)state.focus=currentRun().default_focus??0;state.zoom=1;state.pan=[0,0];render();saveHash();}
+function setRun(i){state.run=i;state.draw=0;state.focus=currentRun().default_focus??0;previousParent=null;const run=currentRun();$('model').value=run.mode;$('model-help').textContent=run.mode==='local'?'Fixed local scales; independent conditional forest draws.':'Gibbs updates learn local scales; draws can be correlated.';$('model-help').textContent+=` ${run.burn_in||0} burn-in, ${run.n_draws||run.partitions.length} retained draws.`;const options=[...new Set(runLists[state.ds].filter(r=>r.mode===run.mode).map(r=>r.lam??.5))].sort((a,b)=>a-b);$('lambdas').innerHTML=options.map(lam=>`<button data-lam="${lam}" aria-pressed="${(run.lam??.5)===lam}">${lam}</button>`).join('');$('lambdas').querySelectorAll('button').forEach(b=>b.onclick=()=>{const next=runLists[state.ds].findIndex(r=>r.mode===run.mode&&(r.lam??.5)===+b.dataset.lam);setRun(next);});$('slider').max=run.draws.length-1;$('slider').value=0;render();saveHash();}
+function setDataset(i,preferredRun){state.ds=i;state.zoom=1;state.pan=[0,0];const ds=currentDataset();$('dataset').value=i;$('point-count').textContent=ds.n||ds.xy.length;$('feature-count').textContent=ds.dimension||2;$('case-name').textContent=ds.name;$('case-about').textContent=ds.about;$('mobile-case').textContent=ds.about;const modes=[...new Set(runLists[i].map(r=>r.mode||'adaptive'))];$('model').innerHTML=modes.map(m=>`<option value="${esc(m)}">${m==='local'?'Fixed local scales':'Adaptive scales'}</option>`).join('');const def=preferredRun??(typeof ds.default_run==='number'?ds.default_run:Math.max(0,runLists[i].findIndex(r=>r.id===ds.default_run)));setRun(Math.max(0,Math.min(runLists[i].length-1,def)));document.querySelector('[data-mode="geometry"]').hidden=!ds.geometry;if(state.mode==='geometry'&&!ds.geometry)setMode('draws');}
+function setPlaying(on){state.playing=on;clearInterval(state.timer);$('play').textContent=on?'Pause':'Play';$('status').setAttribute('aria-live',on?'off':'polite');$('play').setAttribute('aria-label',on?'Pause posterior draws':'Play posterior draws');if(on){if(state.mode!=='draws')setMode('draws');state.timer=setInterval(()=>{previousParent=currentRun().draws[state.draw];state.draw=(state.draw+1)%currentRun().draws.length;drawTransition=performance.now();render();},+$('speed').value);}}
+function saveHash(){const ds=currentDataset(),run=currentRun(),q=new URLSearchParams({dataset:ds.id||String(state.ds),run:run.id||String(state.run),view:state.mode,draw:state.draw});if(state.focus!==null)q.set('point',state.focus);if(state.mode==='edges')q.set('threshold',state.threshold);if(state.mode==='geometry')q.set('geometry',state.geometry);history.replaceState(null,'','#'+q.toString());}
+function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').hidden=true,3500);}
+function setFocus(i){state.focus=Math.max(0,Math.min(currentDataset().xy.length-1,i));setPlaying(false);render();saveHash();}
+function mean(a){return a.reduce((x,y)=>x+y,0)/a.length;}function sd(a){const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)));}function median(a){a=[...a].sort((x,y)=>x-y);return a.length%2?a[Math.floor(a.length/2)]:(a[a.length/2-1]+a[a.length/2])/2;}
+function renderBenchmark(){const all=DATA.benchmarks?.rows||[],rows=all.filter(r=>r.dataset===$('benchmark-dataset').value),groups=new Map();for(const r of rows){if(typeof r.ari!=='number'||!Number.isFinite(r.ari))continue;if(!groups.has(r.method))groups.set(r.method,[]);groups.get(r.method).push(r);}const arr=[...groups].sort((a,b)=>mean(b[1].map(r=>r.ari))-mean(a[1].map(r=>r.ari)));$('benchmark-body').innerHTML=arr.map(([name,rr])=>{const ari=rr.map(r=>r.ari),ami=rr.map(r=>r.ami).filter(Number.isFinite),times=rr.map(r=>r.runtime_seconds).filter(Number.isFinite);return `<tr class="${/forest|BSF/i.test(name)?'ours':''}"><td>${esc(name)}</td><td><span class="score"><span class="scoreline"><i style="width:${100*Math.max(0,Math.min(1,mean(ari)))}%"></i></span>${mean(ari).toFixed(3)} ${ari.length>1?'<span style="color:var(--muted)">± '+sd(ari).toFixed(3)+'</span>':''}</span></td><td>${ami.length?mean(ami).toFixed(3)+(ami.length>1?' ± '+sd(ami).toFixed(3):''):'—'}</td><td>${times.length?(median(times)<1?(median(times)*1000).toFixed(1)+' ms':median(times).toFixed(2)+' s'):'—'}</td><td>${rr.length}</td></tr>`;}).join('');$('benchmark-empty').hidden=arr.length>0;const protocol=DATA.benchmarks?.protocol;if(protocol){if(protocol.seeds)$('benchmark-description').textContent=protocol.seeds;const note=typeof protocol==='string'?protocol:protocol.description||protocol.summary||protocol.note||[protocol.seeds,protocol.preprocessing,protocol.scoring,protocol.k,protocol.runtime].filter(Boolean).join(' ');if(note)$('benchmark-note').textContent='Fixed reference fits; the experiment controls above do not change this comparison. '+note+' Multiple-run scores use mean ± population SD; single runs have no estimated spread. Timings are descriptive, not portable performance guarantees.';}}
+$('dataset').onchange=e=>{setPlaying(false);setDataset(+e.target.value);};$('model').onchange=e=>{const lam=currentRun().lam??.5;let i=runLists[state.ds].findIndex(r=>r.mode===e.target.value&&(r.lam??.5)===lam);if(i<0)i=runLists[state.ds].findIndex(r=>r.mode===e.target.value);setRun(i);};document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));document.querySelectorAll('[data-geometry]').forEach(b=>b.onclick=()=>{state.geometry=b.dataset.geometry;state.zoom=1;state.pan=[0,0];document.querySelectorAll('[data-geometry]').forEach(x=>x.setAttribute('aria-pressed',x===b));render();saveHash();});$('play').onclick=()=>setPlaying(!state.playing);$('speed').onchange=()=>{if(state.playing)setPlaying(true);};$('slider').oninput=e=>{setPlaying(false);previousParent=currentRun().draws[state.draw];state.draw=+e.target.value;drawTransition=performance.now();if(state.mode!=='draws')setMode('draws');else render();saveHash();};$('threshold').oninput=e=>{state.threshold=+e.target.value;$('threshold-value').textContent=state.threshold.toFixed(2);render();saveHash();};$('focus').onchange=e=>{const n=Number(e.target.value);if(Number.isFinite(n))setFocus(Math.round(n));};$('zoom-in').onclick=()=>{state.zoom=Math.min(8,state.zoom*1.3);renderCanvas();};$('zoom-out').onclick=()=>{state.zoom=Math.max(.5,state.zoom/1.3);renderCanvas();};$('reset-view').onclick=()=>{state.zoom=1;state.pan=[0,0];renderCanvas();};
+canvas.addEventListener('wheel',e=>{e.preventDefault();state.zoom=Math.min(8,Math.max(.5,state.zoom*Math.exp(-e.deltaY*.001)));renderCanvas();},{passive:false});canvas.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,pan:[...state.pan]};pointerMoved=false;canvas.setPointerCapture(e.pointerId);});canvas.addEventListener('pointermove',e=>{const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;if(drag){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>3)pointerMoved=true;state.pan=[drag.pan[0]+dx,drag.pan[1]+dy];$('tooltip').style.display='none';renderCanvas();return;}let best=-1,dist=144;positions.forEach(([px,py],i)=>{const d=(px-x)**2+(py-y)**2;if(d<dist){dist=d;best=i;}});if(best!==state.hover){state.hover=best>=0?best:null;renderCanvas();}if(best>=0){const u=currentRun().uncertainty[best];$('tooltip').textContent=`Point ${best} · uncertainty ${u.toFixed(3)}`;$('tooltip').style.display='block';$('tooltip').style.left=Math.min(size.w-210,x+14)+'px';$('tooltip').style.top=Math.max(55,y-30)+'px';}else $('tooltip').style.display='none';});canvas.addEventListener('pointerup',e=>{if(!pointerMoved){const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let best=-1,dist=900;positions.forEach(([px,py],i)=>{const d=(px-x)**2+(py-y)**2;if(d<dist){dist=d;best=i;}});if(best>=0)setFocus(best);}drag=null;});canvas.addEventListener('pointercancel',()=>drag=null);canvas.addEventListener('pointerleave',()=>{$('tooltip').style.display='none';state.hover=null;renderCanvas();});canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();setFocus((state.focus??0)+(e.key==='ArrowRight'?1:-1));}if(e.code==='Space'){e.preventDefault();setPlaying(!state.playing);}});matrix.onclick=e=>{const rect=matrix.getBoundingClientRect(),i=Math.min(currentDataset().xy.length-1,Math.floor((e.clientY-rect.top)/rect.height*currentDataset().xy.length));setFocus(getCache().order[i]);setMode('cocluster');};$('share').onclick=async()=>{saveHash();try{await navigator.clipboard.writeText(location.href);toast('Link copied. It restores this experiment and view.');}catch{toast('Copy the page URL to share this experiment.');}};$('export').onclick=()=>{const out=document.createElement('canvas');out.width=1440;out.height=1080;const c=out.getContext('2d');c.fillStyle=variable('--stage');c.fillRect(0,0,1440,1080);c.fillStyle=variable('--ink');c.font='32px Georgia';c.fillText('Forest Lab · '+currentDataset().name,60,58);c.fillStyle=variable('--muted');c.font='17px sans-serif';c.fillText(`${currentRun().mode==='local'?'Fixed local':'Adaptive'} scales · λ = ${currentRun().lam??.5} · ${$('plot-title').textContent}`,60,93);const scale=Math.min(1320/size.w,850/size.h),w=size.w*scale,h=size.h*scale;c.drawImage(canvas,60+(1320-w)/2,122+(850-h)/2,w,h);c.font='14px sans-serif';c.fillText('Bayesian Geometric Forest · Duan & Roy (2024) reference model',60,1038);c.fillText(`${currentRun().n_draws||currentRun().partitions.length} posterior draws · view: ${state.mode}`,60,1062);const a=document.createElement('a');a.download='forest-lab-'+(currentDataset().id||state.ds)+'-'+state.mode+'.png';a.href=out.toDataURL('image/png');a.click();toast('Figure exported with model context.');};
+let savedTheme;try{savedTheme=localStorage.getItem('forest-lab-theme');}catch{}document.documentElement.dataset.theme=savedTheme||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');$('theme').textContent=document.documentElement.dataset.theme==='dark'?'Light':'Dark';$('theme').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;$('theme').textContent=t==='dark'?'Light':'Dark';try{localStorage.setItem('forest-lab-theme',t);}catch{}render();};
+$('dataset').innerHTML=DATA.datasets.map((d,i)=>`<option value="${i}">${esc(d.name)}</option>`).join('');const bsets=[...new Set((DATA.benchmarks?.rows||[]).map(r=>r.dataset))];$('benchmark-dataset').innerHTML=bsets.map(s=>`<option>${esc(s)}</option>`).join('');$('benchmark-dataset').hidden=!bsets.length;$('benchmark-dataset').onchange=renderBenchmark;
+const initial=new URLSearchParams(location.hash.slice(1));const di=Math.max(0,DATA.datasets.findIndex((d,i)=>(d.id||String(i))===initial.get('dataset')));const ri=runLists[di].findIndex((r,i)=>(r.id||String(i))===initial.get('run'));setDataset(di,ri>=0?ri:undefined);const mode=initial.get('view');if(['draws','edges','cocluster','uncertainty','geometry'].includes(mode)&&(mode!=='geometry'||currentDataset().geometry))setMode(mode);state.draw=Math.max(0,Math.min(currentRun().draws.length-1,parseInt(initial.get('draw'))||0));if(initial.has('point'))state.focus=Math.max(0,Math.min(currentDataset().xy.length-1,parseInt(initial.get('point'))||0));if(initial.has('threshold'))state.threshold=Math.min(1,Math.max(0,parseFloat(initial.get('threshold'))||0));$('threshold').value=state.threshold;$('threshold-value').textContent=state.threshold.toFixed(2);if(['knn','mst','spectral'].includes(initial.get('geometry')))state.geometry=initial.get('geometry');document.querySelectorAll('[data-geometry]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.geometry===state.geometry));new ResizeObserver(resize).observe(canvas);render();renderBenchmark();saveHash();if(!reduce&&!initial.toString())setPlaying(true);document.addEventListener('visibilitychange',()=>{if(document.hidden)setPlaying(false);});
 </script>
 </body>
 </html>
