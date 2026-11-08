@@ -148,11 +148,6 @@ profile with the default output replaces the published result files and figure. 
 CSV are written there as `benchmark.svg` and `benchmark.csv`, alongside the protocol
 records. A custom output leaves the canonical figures and documentation unchanged.
 
-The next meaningful expansions are dimensions/noise and ambient/intrinsic geometry sweeps,
-credible multichain diagnostics, and harder graph bottlenecks. Each needs a declared
-protocol before any performance claim. [Research directions](research.md) separates these
-questions from the methods already implemented.
-
 ## Sources
 
 [Duan & Roy, JASA 2024](https://arxiv.org/abs/2202.00493) supplies the clustering model;

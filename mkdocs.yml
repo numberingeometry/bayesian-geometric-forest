@@ -8,6 +8,8 @@ repo_name: numberingeometry/bayesian-geometric-forest
 theme:
   name: material
   font: false
+  icon:
+    logo: material/tree-outline
   features:
     - navigation.sections
     - navigation.tabs
@@ -50,11 +52,11 @@ extra_css:
   - stylesheets/extra.css
 
 nav:
-  - Overview: index.md
-  - Workbench: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/
-  - Benchmarks: benchmarks.md
-  - Model and math: theory.md
-  - Verification: verification.md
-  - API: api.md
-  - Research directions: research.md
-  - Release notes: releases.md
+  - Home: index.md
+  - Explore: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/
+  - Reference:
+      - Model and mathematics: theory.md
+      - Benchmarks: benchmarks.md
+      - Verification: verification.md
+      - Python API: api.md
+      - Release notes: releases.md

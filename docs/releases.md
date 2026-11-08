@@ -17,6 +17,4 @@ attribution and the exact conditional distribution of the number of trees. Indep
 enumeration checks accompany these identities. Equations render from a locally hosted,
 pinned MathJax bundle.
 
-This release establishes a reference and experimental hub. New latent geometry,
-representation-reliability and quantum tensor-tree models remain separate
-[research directions](research.md).
+This release establishes a reference and experimental hub for existing methods.
