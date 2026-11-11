@@ -24,6 +24,13 @@ python scripts/verify_exactness.py
 | Root count distribution | determinantal Bernoulli convolution vs enumerated partition counts | max abs error 1.8e-15 | PASS |
 | Exact forest draws | 100,000 Wilson draws vs enumerated posterior over 62 partitions | chi-square p = 0.321, TV = 0.0042 | PASS |
 | Constrained draws | 40,000 rejection draws vs enumerated conditional posterior (26 partitions) | chi-square p = 0.872, TV = 0.0033; acceptance 0.165 vs Pr(constraints) 0.166 | PASS |
+| Tempered tree law | log-space Kron elimination vs all n^(n-2) trees, n = 4..7, kappa = 0 to 10^4 | edge probabilities 3.6e-12, log Z relative 3.0e-16 | PASS |
+| Low temperature | trace gate |sum pi - (n-1)| / (n-1), 108 nested-cluster points, kappa = 0.1, 1, 10, 100, 10^4 | dense inverse 3e-16, 7e-02, 2e-01, 1e+11, fails; log-space at most 5e-14 | PASS |
+| Resistance to single linkage | log R_eff - lam u within [log(4/n^2), log(n-1)] for every pair; complete and k-NN graphs, n = 10, 60 | largest |lam^-1 log R - u| is 0.34 of the bound 2 log(n) / lam | PASS |
+| Soft MST | F = -log(Z)/lam vs enumeration and 0 <= S_MST - F <= (n-2) log(n)/lam (n = 6); grad F = 2 L_pi X vs central differences (n = 20) | F relative 5.6e-17; bound holds; gradient relative 2.7e-10 | PASS |
+| Brownian motion on a tree | posterior over the 1,296 tree covariances G_T (flat prior, Gaussian steps) vs the tree law, n = 6 | max abs error 7.6e-17; |det G_T - 1| at most 1.3e-15 | PASS |
+| Overlap of two trees | mean and variance of |T & T'| over all 125^2 pairs, n = 5 | mean error 8.9e-16; variance 0.651 <= bound 1.213 | PASS |
+| Annealed partition function | 20,000 uniform 5-point sets on the circle, lam = 20, vs n^(n-2) kappa^(n-1) | mean 3.0066 vs 3.0650, z = -1.07, p = 0.286 | PASS |
 | Duan & Roy Theorem 1 (illustration) | subspace distance (Frobenius sin-theta) between top-3 eigenvectors of M and of -N; 3-component mixture, sigma_ij = 1 | n = 60: 0.066; n = 120: 0.062; n = 240: 0.057; n = 480: 0.052; n = 960: 0.058 | shown |
 
 **What the checks establish.** The matrix-tree marginal, the closed-form edge and root
@@ -32,6 +39,13 @@ exactly for a given kernel, and rejection under constraints draws the exact cond
 posterior. They do not certify the mixing of the adaptive-scale Gibbs sampler; for that,
 inspect `n_clusters_trace_`, `root_scale_trace_` and `mean_scale_trace_`, or run several
 seeds.
+
+The tempered-tree rows check [the temperature dial](temperature.md): the log-space solver
+against enumeration at every temperature, the point where a dense Laplacian inverse
+loses its digits on clustered data, the resistance-to-single-linkage sandwich on
+complete and sparse graphs, the soft-MST bound and gradient, the Brownian-motion
+reading of the law, the overlap of two independent trees and the annealed partition
+function (a Monte Carlo test, at the same $\alpha$).
 
 The last row illustrates Theorem 1 of Duan & Roy (2024): the leading eigenvectors of the
 edge-inclusion matrix $M$ stay within a small subspace distance of those used by

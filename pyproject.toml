@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bayesian-geometric-forest"
-version = "0.3.0"
-description = "A reproducible workbench for probabilistic trees, forest clustering and geometric graph experiments."
+version = "0.4.0"
+description = "Which tree grew this point cloud? Exact tree laws from random trees to single linkage, and Bayesian spanning forests."
 readme = "README.md"
 authors = [
     { name = "Bobby Zhang", email = "53058005+chelseaandmadrid@users.noreply.github.com" }
 ]
 license = "MIT"
-keywords = ["bayesian inference", "clustering", "spanning trees", "spanning forests", "uncertainty quantification", "wilson algorithm", "matrix-tree theorem"]
+keywords = ["bayesian inference", "clustering", "spanning trees", "single linkage", "ultrametric", "generative model", "spanning forests", "uncertainty quantification", "wilson algorithm", "matrix-tree theorem"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",

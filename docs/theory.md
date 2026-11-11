@@ -1,5 +1,11 @@
 # The model and the math
 
+[![Sampled forests on curved groups, a compact cluster and isolated observations](assets/forest.gif)](explorer/index.html)
+
+With a common leaf scale $\sigma$, each tree factor $\prod_{(i,j) \in T_k} f(y_i \mid y_j)$ of this
+model is the tree law of [the temperature dial](temperature.md) at $\lambda = 1/(2\sigma^2)$;
+the forest adds roots, and so allows several trees.
+
 This page separates what the cited papers establish from what this package implements
 and derives. Statements about the papers are paraphrased; consult them for exact
 assumptions. Every identity used by the code is checked against brute-force

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Tree Dial · Forest Lab</title>
+<meta name="description" content="One temperature dial between a uniformly random tree and single linkage. Every edge glows with its exact probability, computed live in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23fcfaf5'/%3E%3Cpath d='M20 32V22L9 13M20 22l11-10M9 13V6M31 12l4-7' fill='none' stroke='%23004b49' stroke-width='2' stroke-linecap='round'/%3E%3Cg fill='%23be8c14'%3E%3Ccircle cx='9' cy='6' r='3'/%3E%3Ccircle cx='35' cy='5' r='3'/%3E%3Ccircle cx='20' cy='22' r='3'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+@font-face{font-family:Nunito;src:url('../assets/fonts/nunito-latin-400-normal.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:Nunito;src:url('../assets/fonts/nunito-latin-700-normal.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:Comfortaa;src:url('../assets/fonts/comfortaa-latin-700-normal.woff2') format('woff2');font-weight:700;font-display:swap}
+:root{color-scheme:light;--paper:#fcfaf5;--surface:#fffef9;--soft:#f0f2e8;--stage:#f3f5ed;--ink:#004b49;--muted:#5a726f;--line:#dce4d9;--green:#337e70;--green-soft:#e6efe5;--gold:#be8c14;--edge:0,75,73;--dot:#174f4a;--h0:#fcfaf5;--h1:#cfe0cf;--h2:#6aa592;--h3:#004b49}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--paper:#172923;--surface:#20372e;--soft:#2b4137;--stage:#1c3329;--ink:#eef2e5;--muted:#b3c1b2;--line:#41564a;--green:#a2cdb1;--green-soft:#354f3d;--gold:#d7b766;--edge:226,238,220;--dot:#eef2e5;--h0:#1c3329;--h1:#3f6150;--h2:#93c8a9;--h3:#eef2e5}}
+:root[data-theme=dark]{color-scheme:dark;--paper:#172923;--surface:#20372e;--soft:#2b4137;--stage:#1c3329;--ink:#eef2e5;--muted:#b3c1b2;--line:#41564a;--green:#a2cdb1;--green-soft:#354f3d;--gold:#d7b766;--edge:226,238,220;--dot:#eef2e5;--h0:#1c3329;--h1:#3f6150;--h2:#93c8a9;--h3:#eef2e5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 Nunito,ui-rounded,system-ui,sans-serif}
+h1,h2,.brandname{font-family:Comfortaa,ui-rounded,system-ui,sans-serif;font-weight:700}
+h1,h2,p{margin:0}
+a{color:var(--green);text-underline-offset:4px}
+button,select,input{font:inherit;color:var(--ink)}
+button,select{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer}
+button:hover{background:var(--green-soft)}
+button[aria-pressed=true]{background:var(--green-soft);border-color:#b7c9b0}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.shell{max-width:1120px;margin:auto;padding:0 32px}
+.nav{height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.brandname{font-size:19px;letter-spacing:-.6px}.brandname span{font-family:Nunito,sans-serif;font-weight:400;font-size:14px;color:var(--muted)}
+.navlinks{display:flex;gap:22px;align-items:center;font-size:13px;white-space:nowrap}.brandname{white-space:nowrap}.navlinks a{color:var(--muted);text-decoration:none}.navlinks a:hover{color:var(--green)}
+.navlinks button{padding:6px 8px;line-height:0}
+.intro{text-align:center;padding:18px 0 26px}
+.eyebrow{font-size:11px;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px}
+h1{font-size:clamp(26px,3.4vw,40px);line-height:1.3;letter-spacing:-1.4px}
+h1:after{content:'';display:block;width:44px;height:5px;border-radius:9px;background:#d8bc75;margin:16px auto 0}
+.intro p{color:var(--muted);margin-top:12px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.viewbar{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--soft)}
+.viewbar button{border-color:transparent;background:none;font-size:13px;padding:6px 14px;color:var(--muted)}
+.viewbar button[aria-pressed=true]{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.card{border:1px solid var(--line);border-radius:30px;background:var(--surface);overflow:hidden}
+.stage{position:relative;background:var(--stage)}
+.stage:before{content:'';position:absolute;inset:0;background-image:radial-gradient(#849d7b .65px,transparent .65px);background-size:24px 24px;opacity:.13;pointer-events:none}
+#plot{display:block;width:100%;height:470px;touch-action:none}
+.heat{display:none;gap:22px;justify-content:center;align-items:flex-start;padding:26px 20px 18px}
+.heat figure{margin:0;text-align:center}.heat canvas{width:min(340px,40vw);aspect-ratio:1;border-radius:14px;border:1px solid var(--line);image-rendering:pixelated}
+.heat figcaption{font-size:12px;color:var(--muted);margin-top:8px}.heatnote{display:none;text-align:center;font-size:11px;color:var(--muted);padding:0 0 16px}.ultra .heatnote{display:block}
+.ultra .heat{display:flex}.ultra #plot,.ultra .hint{display:none}
+.hint{position:absolute;left:24px;bottom:16px;font-size:12px;color:var(--muted);pointer-events:none}
+.dial{display:grid;grid-template-columns:auto 1fr;gap:14px 18px;align-items:center;padding:20px 26px 8px}
+.track{position:relative}
+#temp{width:100%;accent-color:var(--green)}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.tick{position:absolute;top:-16px;left:0;right:0;height:14px;pointer-events:none}.tick i{position:absolute;bottom:-3px;width:2px;height:8px;margin-left:-1px;background:var(--gold);border-radius:2px}.tick span{position:absolute;bottom:6px;font-size:11px;color:var(--gold);white-space:nowrap}
+.readout{display:flex;gap:8px;flex-wrap:wrap;padding:6px 26px 22px}
+.pill{font-size:12px;padding:3px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--surface)}
+.pill b{color:var(--ink);font-weight:700}
+details{margin:18px 4px 40px;color:var(--muted);font-size:14px}
+summary{cursor:pointer;color:var(--ink)}
+details p{margin:10px 0;max-width:62rem}
+@media (max-width:700px){.shell{padding:0 16px}.navlinks{gap:14px}.navlinks .wide{display:none}#plot{height:360px}.dial{grid-template-columns:1fr;padding:16px}.track{margin-top:20px}.readout{padding:6px 16px 18px}.heat{flex-direction:column;align-items:center}.heat canvas{width:min(300px,78vw)}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="nav" aria-label="Main navigation">
+  <a class="brand" href="../"><svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 34V24M20 24L8 15M20 24L31 13M8 15L8 6M8 15L3 23M31 13L36 5M31 13L36 24"/></g><g fill="var(--green)"><circle cx="20" cy="34" r="2.8"/><circle cx="20" cy="24" r="2.8"/><circle cx="8" cy="15" r="2.8"/><circle cx="31" cy="13" r="2.8"/></g></svg><span class="brandname">forest<span> / dial</span></span></a>
+  <div class="navlinks"><a class="wide" href="../explorer/">Forest explorer</a><a href="../temperature/">The mathematics</a><a class="wide" href="https://github.com/numberingeometry/bayesian-geometric-forest">Source</a><button id="theme" aria-label="Switch light or dark theme"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor"/></svg></button></div>
+</nav>
+<header class="intro"><div class="eyebrow">ONE DIAL · RANDOM TREE TO SINGLE LINKAGE</div><h1>Which tree grew this cloud?</h1><p>Turn the temperature. Every edge glows with its exact probability of being in the tree.</p></header>
+<main>
+  <div class="toolbar">
+    <div><label class="sr-only" for="dataset" hidden>Dataset</label><select id="dataset" aria-label="Dataset"></select> <button id="play">Play</button></div>
+    <div class="viewbar" role="group" aria-label="View"><button data-view="tree" aria-pressed="true">Tree</button><button data-view="ultra" aria-pressed="false">Ultrametric</button></div>
+  </div>
+  <section class="card" id="card" aria-label="Tree dial">
+    <div class="stage">
+      <canvas id="plot" role="img" aria-label="Points and the probability of each edge. Drag a point to move it."></canvas>
+      <div class="heat"><figure><canvas id="hk" width="64" height="64" aria-label="Resistance ultrametric heat map"></canvas><figcaption>Kirchhoff · λ⁻¹ log R<sub>eff</sub></figcaption></figure><figure><canvas id="hs" width="64" height="64" aria-label="Single-linkage ultrametric heat map"></canvas><figcaption>Single linkage · minimax ℓ²</figcaption></figure></div><p class="heatnote">Rows and columns in single-linkage order · colour on a fourth-root scale</p>
+      <span class="hint" id="hint">Drag any point · the tree responds</span>
+    </div>
+    <div class="dial">
+      <label for="temp">Temperature</label>
+      <div class="track"><span class="tick" id="tick" hidden><i id="tickmark"></i><span id="ticklabel">the temperature that grew it</span></span><input id="temp" type="range" min="-1" max="4" step="0.01" value="0.6" aria-describedby="ends"><div class="ends" id="ends"><span>hot · any tree</span><span>cold · minimum spanning tree</span></div></div>
+    </div>
+    <div class="readout" id="readout" aria-live="polite"></div>
+  </section>
+  <details>
+    <summary>What am I looking at?</summary>
+    <p>A tree law on the points: a spanning tree T has probability proportional to exp(−λ Σ ℓ²) over its edges. It is the posterior over trees if the cloud was grown by Gaussian diffusion along an unknown tree, with step variance σ² = 1/(2λ). Hot: every tree is nearly equally likely. Cold: only the minimum spanning tree survives, and cutting its longest edges is single linkage.</p>
+    <p>Edge opacity is Pr(e ∈ T) = w<sub>e</sub>·R<sub>eff</sub>(e) (Kirchhoff), computed exactly in your browser by a log-space Kron elimination. The dial is κ = λ × the mean squared MST edge. The Ultrametric view compares λ⁻¹ log R<sub>eff</sub> with the single-linkage ultrametric; their gap is at most 2 log n / λ for every pair.</p>
+    <p>Known mathematics, implemented and verified against brute-force enumeration. <a href="../temperature/">Statements, references and proofs</a></p>
+  </details>
+</main>
+</div>
+<script src="treelaw.js"></script>
+<script>
+(function(){
+'use strict';
+var T=window.TreeLawJS, $=function(id){return document.getElementById(id);};
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){var u=1-r(),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function prufer(seq,n){var deg=new Array(n).fill(1),E=[],i;seq.forEach(function(x){deg[x]++;});
+  for(var s=0;s<seq.length;s++){var leaf=0;while(deg[leaf]!==1)leaf++;E.push([leaf,seq[s]]);deg[leaf]--;deg[seq[s]]--;}
+  var last=[];for(i=0;i<n;i++)if(deg[i]===1)last.push(i);E.push(last);return E;}
+
+function grown(){var r=rng(7),n=110,seq=[],i;for(i=0;i<n-2;i++)seq.push(Math.floor(r()*n));
+  var E=prufer(seq,n),adj=[];for(i=0;i<n;i++)adj.push([]);E.forEach(function(e){adj[e[0]].push(e[1]);adj[e[1]].push(e[0]);});
+  var P=new Array(n),stack=[0];P[0]=[0,0];var seen=new Uint8Array(n);seen[0]=1;
+  while(stack.length){var u=stack.pop();adj[u].forEach(function(v){if(!seen[v]){seen[v]=1;P[v]=[P[u][0]+gauss(r),P[u][1]+gauss(r)];stack.push(v);}});}
+  return {pts:P,truth:E,sigma:1};}
+function nested(){var r=rng(3),P=[];[[0,0],[6,1],[2.5,5.5]].forEach(function(c){[[0,0],[1.6,.4],[.5,1.5]].forEach(function(s){for(var i=0;i<12;i++)P.push([c[0]+s[0]+.28*gauss(r),c[1]+s[1]+.28*gauss(r)]);});});return {pts:P};}
+function dust(){var P=[[0,0]],size=1;for(var l=0;l<3;l++){var nx=size/3,Q=[];P.forEach(function(p){[[0,0],[size-nx,0],[0,size-nx],[size-nx,size-nx]].forEach(function(s){Q.push([p[0]+s[0],p[1]+s[1]]);});});P=Q;size=nx;}
+  var r=rng(5);return {pts:P.map(function(p){return [p[0]+size*(.5+.08*gauss(r)),p[1]+size*(.5+.08*gauss(r))];})};}
+function square(){var r=rng(11),P=[];for(var i=0;i<100;i++)P.push([r(),r()]);return {pts:P};}
+var DATA=[{name:'Grown by diffusion',make:grown},{name:'Clusters within clusters',make:nested},{name:'Cantor dust',make:dust},{name:'Filled square',make:square}];
+DATA.forEach(function(d,i){var o=document.createElement('option');o.value=i;o.textContent=d.name;$('dataset').appendChild(o);});
+
+var S={pts:[],scale:1,n:0,C:null,mstE:null,mstSet:null,U:null,umax:1,order:null,sbar:1,law:null,view:'tree',truth:null,kTrue:null,drag:-1,frame:0,playing:false};
+
+function normalise(P){var mn=[1e9,1e9],mx=[-1e9,-1e9];P.forEach(function(p){for(var t=0;t<2;t++){mn[t]=Math.min(mn[t],p[t]);mx[t]=Math.max(mx[t],p[t]);}});
+  var s=Math.max(mx[0]-mn[0],mx[1]-mn[1]);return {pts:P.map(function(p){return [(p[0]-mn[0])/s,(p[1]-mn[1])/s];}),scale:s};}
+function order(C,n){var parent=[],list=[],i,E=[];for(i=0;i<n;i++){parent.push(i);list.push([i]);}
+  function find(x){while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;}
+  S.mstE.forEach(function(e){E.push(e);});E.sort(function(a,b){return C[a[0]*n+a[1]]-C[b[0]*n+b[1]];});
+  E.forEach(function(e){var a=find(e[0]),b=find(e[1]);if(a!==b){parent[b]=a;list[a]=list[a].concat(list[b]);}});return list[find(0)];}
+function geometry(){var n=S.pts.length;S.n=n;S.C=T.sqDists(S.pts);S.mstE=T.mst(S.C,n);S.mstSet={};
+  var s=0;S.mstE.forEach(function(e){S.mstSet[e[0]*n+e[1]]=1;s+=S.C[e[0]*n+e[1]];});S.sbar=s/(n-1);
+  S.U=T.minimax(S.C,n,S.mstE);S.umax=0;for(var i=0;i<n*n;i++)if(S.U[i]>S.umax)S.umax=S.U[i];S.order=order(S.C,n);}
+function load(i){var d=DATA[i].make(),nm=normalise(d.pts);S.pts=nm.pts;S.truth=d.truth||null;geometry();
+  S.bb=[0,0,0,0];S.bb[2]=Math.max.apply(null,S.pts.map(function(p){return p[0];}));S.bb[3]=Math.max.apply(null,S.pts.map(function(p){return p[1];}));size();
+  S.kTrue=d.sigma?(nm.scale*nm.scale/(2*d.sigma*d.sigma))*S.sbar:null;
+  $('tick').hidden=!S.kTrue;if(S.kTrue){var f=Math.min(1,Math.max(0,(Math.log10(S.kTrue)+1)/5));$('tickmark').style.left=(100*f)+'%';
+    var lab=$('ticklabel');lab.style.left=(100*f)+'%';lab.style.transform=f<.2?'translateX(-6px)':f>.8?'translateX(-100%)':'translateX(-50%)';}
+  ['hk','hs'].forEach(function(id){$(id).width=S.n;$(id).height=S.n;});schedule();}
+
+function kappa(){return Math.pow(10,+$('temp').value);}
+function compute(){var lam=kappa()/S.sbar;S.law=T.treeLaw(S.C,S.n,lam);S.lam=lam;}
+
+var canvas=$('plot'),ctx=canvas.getContext('2d'),box={x:0,y:0,s:1};
+function size(){var r=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+  var pad=30,bb=S.bb||[0,0,1,1],wx=Math.max(bb[2]-bb[0],.2),wy=Math.max(bb[3]-bb[1],.2),s=Math.min((r.width-2*pad)/wx,(r.height-2*pad)/wy);
+  box={x:(r.width-s*wx)/2-s*bb[0],y:(r.height-s*wy)/2-s*(1-bb[3]),s:s};}
+function xy(p){return [box.x+p[0]*box.s,box.y+(1-p[1])*box.s];}
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+function drawTree(){var r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);var n=S.n,P=S.law.P,edge=css('--edge'),list=[],i,j;
+  for(i=0;i<n;i++)for(j=i+1;j<n;j++){var p=P[i*n+j];if(p>0.004)list.push([p,i,j]);}
+  list.sort(function(a,b){return a[0]-b[0];});ctx.lineCap='round';
+  if(S.truth&&$('dataset').value==='0'){ctx.setLineDash([3,4]);ctx.strokeStyle=css('--gold');ctx.globalAlpha=.55;ctx.lineWidth=1;
+    S.truth.forEach(function(e){var a=xy(S.pts[e[0]]),b=xy(S.pts[e[1]]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});ctx.setLineDash([]);ctx.globalAlpha=1;}
+  list.forEach(function(e){var a=xy(S.pts[e[1]]),b=xy(S.pts[e[2]]);ctx.strokeStyle='rgba('+edge+','+Math.min(1,.08+.92*Math.pow(e[0],.8)).toFixed(3)+')';ctx.lineWidth=.6+2.2*e[0];
+    ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});
+  ctx.fillStyle=css('--dot');S.pts.forEach(function(p,k){var q=xy(p);ctx.beginPath();ctx.arc(q[0],q[1],k===S.drag?5:3,0,2*Math.PI);ctx.fill();});}
+
+function ramp(t){var st=[css('--h0'),css('--h1'),css('--h2'),css('--h3')].map(function(c){return [1,3,5].map(function(i){return parseInt(c.slice(i,i+2),16);});});
+  t=Math.max(0,Math.min(1,t))*3;var k=Math.min(2,Math.floor(t)),f=t-k;return st[k].map(function(v,i){return Math.round(v+(st[k+1][i]-v)*f);});}
+function paint(id,val){var c=$(id),g=c.getContext('2d'),n=S.n,img=g.createImageData(n,n);
+  for(var a=0;a<n;a++)for(var b=0;b<n;b++){var v=a===b?0:val(S.order[a],S.order[b]),rgb=ramp(Math.pow(Math.max(0,v)/S.umax,.25)),o=4*(a*n+b);img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=255;}
+  g.putImageData(img,0,0);}
+function gap(){var n=S.n,g=0;for(var i=0;i<n;i++)for(var j=i+1;j<n;j++){var v=S.law.logR[i*n+j]/S.lam;g=Math.max(g,Math.abs(v-S.U[i*n+j]));}return g;}
+function drawUltra(){var n=S.n,lr=S.law.logR,lam=S.lam;paint('hk',function(i,j){return lr[i*n+j]/lam;});paint('hs',function(i,j){return S.U[i*n+j];});}
+
+function readout(){var n=S.n,P=S.law.P,ov=0,tr=0;S.mstE.forEach(function(e){ov+=P[e[0]*n+e[1]];});
+  var h='<span class="pill">κ <b>'+fmt(kappa())+'</b></span><span class="pill">shared with the MST <b>'+Math.round(100*ov/(n-1))+'%</b></span>';
+  if(S.truth&&$('dataset').value==='0'){S.truth.forEach(function(e){tr+=P[e[0]*n+e[1]];});h+='<span class="pill">shared with the tree that grew it <b>'+Math.round(100*tr/(n-1))+'%</b></span>';}
+  if(S.view==='ultra'){h+='<span class="pill">largest gap <b>'+pct(gap()/S.umax)+'</b> of the top merge</span><span class="pill">guaranteed ≤ <b>'+pct(2*Math.log(n)/S.lam/S.umax)+'</b></span>';}
+  if(S.law.traceError>1e-8)h+='<span class="pill">numerical check failed</span>';$('readout').innerHTML=h;}
+function fmt(x){return x<10?x.toFixed(2):x<1000?x.toFixed(0):x.toExponential(1).replace('e+','e');}
+function pct(x){return x>=10?'>1000%':(100*x<1?(100*x).toFixed(2):(100*x).toFixed(1))+'%';}
+
+function render(){S.frame=0;compute();if(S.view==='tree')drawTree();else drawUltra();readout();}
+function schedule(){if(!S.frame)S.frame=requestAnimationFrame(render);}
+
+$('temp').addEventListener('input',schedule);
+$('dataset').addEventListener('change',function(){load(+this.value);});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){S.view=b.dataset.view;
+  document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',x===b);});$('card').classList.toggle('ultra',S.view==='ultra');
+  schedule();});});
+$('theme').addEventListener('click',function(){var d=document.documentElement,dark=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;d.dataset.theme=dark?'light':'dark';schedule();});
+
+function nearest(ev){var r=canvas.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top,best=-1,bd=196;
+  S.pts.forEach(function(p,k){var q=xy(p),d=(q[0]-x)*(q[0]-x)+(q[1]-y)*(q[1]-y);if(d<bd){bd=d;best=k;}});return best;}
+canvas.addEventListener('pointerdown',function(ev){var k=nearest(ev);if(k<0)return;S.drag=k;canvas.setPointerCapture(ev.pointerId);});
+canvas.addEventListener('pointermove',function(ev){if(S.drag<0){canvas.style.cursor=nearest(ev)>=0?'grab':'default';return;}
+  var r=canvas.getBoundingClientRect();S.pts[S.drag]=[Math.max(-.05,Math.min(1.05,(ev.clientX-r.left-box.x)/box.s)),Math.max(-.05,Math.min(1.05,1-(ev.clientY-r.top-box.y)/box.s))];
+  var keep=S.kTrue&&S.sbar;geometry();if(keep)S.kTrue=null,$('tick').hidden=true;schedule();});
+canvas.addEventListener('pointerup',function(){S.drag=-1;schedule();});
+
+$('play').addEventListener('click',function(){if(S.playing){S.playing=false;$('play').textContent='Play';return;}
+  S.playing=true;$('play').textContent='Pause';var v=+$('temp').value;if(v>=3.95)v=-1;var t0=null,v0=v;
+  function step(ts){if(!S.playing)return;if(t0===null)t0=ts;v=v0+(ts-t0)/1600;if(v>=4){v=4;S.playing=false;$('play').textContent='Play';}
+    $('temp').value=v;render();if(S.playing)requestAnimationFrame(step);}
+  if(reduce){$('temp').value=4;S.playing=false;$('play').textContent='Play';schedule();}else requestAnimationFrame(step);});
+
+window.addEventListener('resize',function(){size();schedule();});
+size();load(0);
+})();
+</script>
+</body>
+</html>

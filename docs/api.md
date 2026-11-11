@@ -2,6 +2,7 @@
 
 ```python
 from bgforest import (
+    TreeLaw,                           # the tempered tree law of a point cloud
     BayesianSpanningForest,            # the clustering model
     ConstrainedBayesianSpanningForest, # ... conditioned on must-link / cannot-link pairs
     ForestKernel,                      # augmented-graph weights and closed forms
@@ -9,6 +10,34 @@ from bgforest import (
     WilsonSampler,                     # exact weighted spanning trees and forests
 )
 ```
+
+## `TreeLaw`
+
+The law $\Pr(T) \propto \exp(-\lambda \sum_{e \in T} \lVert x_i - x_j \rVert^2)$ over the
+spanning trees of a point cloud: the posterior over trees for Gaussian diffusion along an
+unknown tree with step variance $1/(2\lambda)$. See [the temperature dial](temperature.md).
+
+```python
+from bgforest import TreeLaw
+from bgforest.treelaw import lam_from_scale
+
+law = TreeLaw(X, lam=lam_from_scale(TreeLaw(X, 1.0).costs, kappa=10.0))
+```
+
+| Method | Returns |
+|---|---|
+| `edge_probability()` | $(n, n)$ matrix of $\Pr(e \in T) = w_e R_{\mathrm{eff}}(e)$, exact at any temperature |
+| `log_partition()` | $\log Z$ (matrix-tree theorem) |
+| `log_resistance()` | $(n, n)$ log effective resistances |
+| `expected_length()` | $\mathbb E\, S_T$ |
+| `free_energy()`, `free_energy_grad()` | soft MST length $-\lambda^{-1}\log Z$ and its gradient $2L_\pi X$ |
+| `mst()`, `mst_overlap()` | the $\lambda \to \infty$ limit and the expected fraction of tree edges it shares |
+| `trace_error()` | $\lvert\sum_e \pi_e - (n-1)\rvert/(n-1)$, a built-in accuracy gate |
+| `sample(n_trees, random_state)` | exact Wilson draws, as parent arrays |
+
+`TreeLaw.from_costs(C, lam)` accepts any symmetric cost matrix, with `inf` for a missing
+edge. `bgforest.ultrametric` adds `single_linkage_ultrametric`,
+`log_resistance_ultrametric`, `tree_covariance`, `tree_diffusion` and `cantor_dust`.
 
 ## `BayesianSpanningForest`
 

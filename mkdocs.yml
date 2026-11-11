@@ -1,5 +1,5 @@
 site_name: bayesian-geometric-forest
-site_description: Reproducible probabilistic trees, forest clustering, graph geometry, and transparent benchmarks.
+site_description: Which tree grew this point cloud? Exact tree laws from random trees to single linkage, Bayesian spanning forests, and transparent benchmarks.
 site_author: Bobby Zhang
 site_url: https://numberingeometry.github.io/bayesian-geometric-forest/
 repo_url: https://github.com/numberingeometry/bayesian-geometric-forest
@@ -53,9 +53,11 @@ extra_css:
 
 nav:
   - Home: index.md
+  - Dial: https://numberingeometry.github.io/bayesian-geometric-forest/dial/
   - Explore: https://numberingeometry.github.io/bayesian-geometric-forest/explorer/
   - Reference:
-      - Model and mathematics: theory.md
+      - The temperature dial: temperature.md
+      - Forest model: theory.md
       - Benchmarks: benchmarks.md
       - Verification: verification.md
       - Python API: api.md
