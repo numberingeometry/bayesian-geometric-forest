@@ -2,7 +2,7 @@
 
 Which tree grew this point cloud? Exact answers, from random trees to single linkage.
 
-[![Edge probabilities of the tree law as the temperature falls: a fog of possible trees settles into the minimum spanning tree](docs/assets/dial.gif)](https://numberingeometry.github.io/bayesian-geometric-forest/dial/)
+[![A cloud grows by Gaussian steps along a random tree; then the exact posterior over trees appears and cools into the minimum spanning tree](docs/assets/grow.gif)](https://numberingeometry.github.io/bayesian-geometric-forest/dial/)
 
 Grow a cloud by Gaussian diffusion along an unknown tree, and the posterior over trees
 has one dial: the step size. Hot, any tree will do. Cold, only the minimum spanning tree

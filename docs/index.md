@@ -14,7 +14,7 @@ Turn one dial from random trees to single linkage.
 
 [Turn the dial](dial/index.html){ .md-button .md-button--primary } [Explore forests](explorer/index.html){ .md-button }
 
-<a href="dial/index.html" aria-label="Open the temperature dial"><picture><source media="(prefers-reduced-motion: reduce)" srcset="assets/dial-still.webp"><img src="assets/dial.gif" alt="Edge probabilities of the tree law on nested clusters. As the temperature falls, a fog of possible trees settles into the minimum spanning tree."></picture></a>
+<a href="dial/index.html" aria-label="Open the temperature dial"><picture><source media="(prefers-reduced-motion: reduce)" srcset="assets/grow-still.webp"><img src="assets/grow.gif" alt="A cloud grows by Gaussian steps along a random tree. Then the exact posterior over trees appears as a fog of possible edges and cools into the minimum spanning tree."></picture></a>
 
 </div>
 

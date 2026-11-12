@@ -2,6 +2,8 @@
 
 **[Turn the dial](https://numberingeometry.github.io/bayesian-geometric-forest/dial/)**
 
+![Edge probabilities of the tree law on nested clusters: as the temperature falls, a fog of possible trees settles into the minimum spanning tree](assets/dial.gif)
+
 A point cloud, one temperature, and a law over the trees that could have grown it.
 Hot, every spanning tree is about equally likely. Cold, only the minimum spanning tree
 survives, and its cuts are single-linkage clusters. This page states what the dial

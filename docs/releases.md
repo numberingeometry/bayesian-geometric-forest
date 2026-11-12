@@ -5,7 +5,9 @@
 A new [workbench page](dial/index.html) turns one dial between a uniformly random tree
 and single linkage. Each edge glows with its exact probability under the tree law of a
 point cloud, computed live in the browser; points can be dragged, and an Ultrametric
-view shows Kirchhoff resistances converging to the single-linkage ultrametric.
+view shows Kirchhoff resistances converging to the single-linkage ultrametric. **Grow**
+animates the generative model: a new cloud appears generation by generation along a
+random tree, and the dial then starts at the temperature that grew it.
 
 `bgforest.TreeLaw` computes the same law in Python through a log-space Kron elimination
 that stays exact at temperatures where a dense Laplacian inverse has no correct digits.
