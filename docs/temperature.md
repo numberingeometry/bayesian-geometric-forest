@@ -214,7 +214,8 @@ because $\Pr(e, f \in T) \ge 0$ means $K_{ef}^2 \le \pi_e\pi_f$.
 </details>
 
 The fraction of shared edges therefore concentrates around its mean as $n$ grows, at every
-temperature. Which edges disagree is a separate question that this bound does not answer.
+temperature. The workbench's **Draw two trees** shows two independent draws, their shared
+edges, and this expected overlap. Which edges disagree is a separate question that this bound does not answer.
 
 ## The annealed partition function
 
@@ -260,8 +261,8 @@ too, but when cold they can be trapped between nearly isolated points for about
 $e^{\lambda\,\Delta c}$ steps. The chain rule (Kulkarni, 1990) avoids that: join the pair
 of contracted groups most likely to be joined, with its exact probability $w_{AB}R_{AB}$,
 or delete every edge between them, then recompute. `TreeLaw.sample(method="chain")` and
-the workbench's **Draw a tree** use it; a draw of 110 points takes well under a second
-in the browser. The workbench runs the same algorithm in
+the workbench's **Draw two trees** use it; a draw of 110 points takes well under a
+second in the browser. The workbench runs the same algorithm in
 JavaScript (`docs/dial/treelaw.js`), and a test checks it against the Python package.
 
 ## References
