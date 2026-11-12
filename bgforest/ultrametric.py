@@ -149,6 +149,58 @@ def tree_covariance(parent: np.ndarray, edge_variance: Optional[Sequence[float]]
     return (A * var) @ A.T
 
 
+def clade_haar_basis(parent: np.ndarray) -> Tuple[np.ndarray, np.ndarray, list]:
+    """Orthonormal Haar basis of the clade hierarchy of a rooted tree.
+
+    The hierarchy holds the clade D(v) (v and its descendants) of every node, plus the
+    singleton {v} of every internal node. The children of D(v) are {v} and the clades
+    of v's children. Each hierarchy node with m children contributes m - 1 vectors that
+    are constant on its children and sum to zero on it; the constant vector completes
+    the basis.
+
+    Any matrix of the form sum_B alpha_B 1_B 1_B' over this hierarchy, such as
+    :func:`tree_covariance`, has W' A W supported on pairs of basis vectors whose
+    hierarchy nodes are nested (equal, or one an ancestor of the other).
+
+    Returns
+    -------
+    W : (n, n) array
+        Orthonormal columns; column 0 is the constant vector.
+    owner : (n,) int array
+        For column k >= 1, the tree node v whose clade D(v) the vector belongs to; -1 for
+        the constant.
+    clades : list of sets
+        ``clades[v]`` is D(v).
+    """
+    parent = np.asarray(parent, dtype=np.int64)
+    n = len(parent)
+    kids = _children(parent)
+    root = int(np.flatnonzero(parent < 0)[0])
+    order = [root]
+    for u in order:
+        order.extend(kids[u])
+    clades = [set() for _ in range(n)]
+    for v in reversed(order):
+        clades[v] = {v}.union(*[clades[c] for c in kids[v]])
+    W = np.zeros((n, n))
+    owner = np.full(n, -1, dtype=np.int64)
+    W[:, 0] = 1 / np.sqrt(n)
+    col = 1
+    for v in order:
+        parts = [[v]] + [sorted(clades[c]) for c in kids[v]]
+        merged = list(parts[0])
+        for part in parts[1:]:
+            a, b = len(merged), len(part)
+            vec = np.zeros(n)
+            vec[merged] = -b
+            vec[part] = a
+            W[:, col] = vec / np.linalg.norm(vec)
+            owner[col] = v
+            col += 1
+            merged += part
+    return W, owner, clades
+
+
 def tree_diffusion(
     n: int,
     sigma: float = 1.0,
@@ -222,6 +274,7 @@ def cantor_dust(level: int = 3, ratio: float = 1 / 3, dim: int = 2) -> np.ndarra
 
 __all__ = [
     "cantor_dust",
+    "clade_haar_basis",
     "is_ultrametric",
     "log_resistance_ultrametric",
     "reroot",

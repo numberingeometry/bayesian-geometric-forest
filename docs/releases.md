@@ -13,7 +13,8 @@ random tree, and the dial then starts at the temperature that grew it.
 that stays exact at temperatures where a dense Laplacian inverse has no correct digits.
 `bgforest.ultrametric` adds the single-linkage ultrametric, Brownian-motion tree
 covariances and a tree-diffusion data generator. [The temperature dial](temperature.md)
-states the mathematics with sources, and seven new rows on the
+states the mathematics with sources, including the Haar wavelets that make tree
+covariances sparse, and eight new rows on the
 [verification page](verification.md) check it against enumeration.
 
 ## November 2026: Forest Lab

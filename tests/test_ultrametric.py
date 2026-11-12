@@ -7,6 +7,7 @@ from scipy.spatial.distance import pdist, squareform
 from bgforest.treelaw import squared_distances
 from bgforest.ultrametric import (
     cantor_dust,
+    clade_haar_basis,
     is_ultrametric,
     log_resistance_ultrametric,
     resistance_bound,
@@ -81,3 +82,16 @@ def test_cantor_dust_is_hierarchical():
     U = single_linkage_ultrametric(D)
     off = ~np.eye(64, dtype=bool)
     assert (D[off] / U[off]).max() < 4.0  # bounded distortion: bi-Lipschitz to an ultrametric
+
+
+def test_haar_basis_bands_the_tree_covariance():
+    for seed in range(3):
+        _, parent = tree_diffusion(30, random_state=seed)
+        W, owner, clades = clade_haar_basis(parent)
+        assert np.allclose(W.T @ W, np.eye(30))
+        G = tree_covariance(parent, edge_variance=np.random.default_rng(seed).uniform(0.5, 2.0, 30))
+        B = W.T @ G @ W
+        for a, b in itertools.product(range(30), repeat=2):
+            oa, ob = owner[a], owner[b]
+            if oa >= 0 and ob >= 0 and not (clades[oa] <= clades[ob] or clades[ob] <= clades[oa]):
+                assert abs(B[a, b]) < 1e-12

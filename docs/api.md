@@ -37,7 +37,8 @@ law = TreeLaw(X, lam=lam_from_scale(TreeLaw(X, 1.0).costs, kappa=10.0))
 
 `TreeLaw.from_costs(C, lam)` accepts any symmetric cost matrix, with `inf` for a missing
 edge. `bgforest.ultrametric` adds `single_linkage_ultrametric`,
-`log_resistance_ultrametric`, `tree_covariance`, `tree_diffusion` and `cantor_dust`.
+`log_resistance_ultrametric`, `tree_covariance`, `clade_haar_basis`, `tree_diffusion` and
+`cantor_dust`.
 
 ## `BayesianSpanningForest`
 

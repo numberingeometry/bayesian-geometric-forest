@@ -37,7 +37,12 @@ from bgforest.exact import (  # noqa: E402
 from bgforest.models.constrained import ConstrainedBayesianSpanningForest  # noqa: E402
 from bgforest.samplers.wilson import WilsonSampler, forest_partition  # noqa: E402
 from bgforest.treelaw import TreeLaw, lam_from_scale, mst_edges, squared_distances  # noqa: E402
-from bgforest.ultrametric import single_linkage_ultrametric, tree_covariance  # noqa: E402
+from bgforest.ultrametric import (  # noqa: E402
+    clade_haar_basis,
+    single_linkage_ultrametric,
+    tree_covariance,
+    tree_diffusion,
+)
 
 ALPHA = 1e-3
 EXACT_TOL = 1e-10
@@ -316,6 +321,18 @@ def tree_law_checks():
     record("Brownian motion on a tree", "posterior over the 1,296 tree covariances G_T (flat prior, Gaussian steps) vs the tree law, n = 6",
            f"max abs error {err:.1e}; |det G_T - 1| at most {det_err:.1e}", err < EXACT_TOL and det_err < EXACT_TOL)
 
+    # Haar wavelets of the clade hierarchy: W' G_T W vanishes off nested clades.
+    worst, frac = 0.0, []
+    for seed in range(5):
+        _, parent = tree_diffusion(40, random_state=seed)
+        W, owner, clades = clade_haar_basis(parent)
+        B = W.T @ tree_covariance(parent, edge_variance=np.random.default_rng(seed).uniform(0.5, 2.0, 40)) @ W
+        nested = np.array([[a < 0 or b < 0 or clades[a] <= clades[b] or clades[b] <= clades[a] for b in owner] for a in owner])
+        worst = max(worst, np.abs(B[~nested]).max(), np.abs(W.T @ W - np.eye(40)).max())
+        frac.append(nested.mean())
+    record("Haar banding", "W' G_T W off nested clades, and W'W - I, for 5 random trees with n = 40 and random edge variances",
+           f"max abs entry {worst:.1e}; nested pairs {min(frac):.0%} to {max(frac):.0%} of the matrix", worst < EXACT_TOL)
+
     # Two independent trees: E|T & T'| = sum pi_e^2 and Var |T & T'| <= sum pi_e^2 (1 - pi_e^2).
     X = np.random.default_rng(51).uniform(size=(5, 2))
     C = squared_distances(X)
@@ -393,7 +410,7 @@ The tempered-tree rows check [the temperature dial](temperature.md): the log-spa
 against enumeration at every temperature, the point where a dense Laplacian inverse
 loses its digits on clustered data, the resistance-to-single-linkage sandwich on
 complete and sparse graphs, the soft-MST bound and gradient, the Brownian-motion
-reading of the law, the overlap of two independent trees and the annealed partition
+reading of the law, the Haar banding of tree covariances, the overlap of two independent trees and the annealed partition
 function (a Monte Carlo test, at the same $\\alpha$).
 
 The last row illustrates Theorem 1 of Duan & Roy (2024): the leading eigenvectors of the

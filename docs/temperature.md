@@ -138,6 +138,29 @@ $\sigma^2 G_T$, one per labelled tree, under a flat prior. Because every $G_T$ h
 same determinant, no tree gets an Occam bonus; only the fit term $S_T$ separates them.
 `bgforest.ultrametric.tree_covariance` returns $G_T$.
 
+**Haar wavelets see the hierarchy [elementary].** The clades of a rooted tree (each node
+with its descendants), together with singletons, form a hierarchy, and
+$G_T = \sum_{v \ne r} \sigma_v^2\, \mathbf 1_{D(v)} \mathbf 1_{D(v)}^\top$ is a sum of
+clade blocks. Take the Haar basis of that hierarchy: for each clade, vectors constant on
+its children and summing to zero on it. In this basis $W^\top G_T W$ vanishes except
+between nested clades (equal, or one inside the other). For a balanced tree that is
+$O(n \log n)$ entries out of $n^2$. Haar-like bases on trees are standard in multiscale
+analysis (Coifman & Gavish, 2011); `bgforest.ultrametric.clade_haar_basis` builds this one.
+
+<details markdown>
+<summary>Proof</summary>
+
+Let $\psi$ belong to clade $B$: it lives on $B$, is constant on $B$'s children and sums
+to zero on $B$. For any clade $C$, $\langle \mathbf 1_C, \psi \rangle$ is zero if $C \supseteq B$
+(zero sum) or $C \cap B = \emptyset$; otherwise $C$ lies inside one child of $B$. So
+$G_T\psi = \sum_C \alpha_C \langle \mathbf 1_C, \psi\rangle \mathbf 1_C$ is supported in $B$, and
+$\langle \psi', G_T \psi \rangle = 0$ whenever the clade of $\psi'$ is disjoint from $B$. Clades
+are either nested or disjoint.
+
+</details>
+
+![A cloud grown along a binary tree, its covariance of nested blocks, and the sparse Haar transform](figs/tree-covariance.svg)
+
 ## A differentiable single linkage
 
 The free energy $F_\lambda = -\lambda^{-1} \log Z$ is a smooth minimum spanning tree length.
@@ -262,6 +285,8 @@ JavaScript (`docs/dial/treelaw.js`), and a test checks it against the Python pac
 - M. B. Paulus, D. Choi, D. Tarlow, A. Krause and C. J. Maddison. Gradient estimation
   with stochastic softmax tricks. *NeurIPS*, 2020.
   [arXiv:2006.08063](https://arxiv.org/abs/2006.08063)
+- R. R. Coifman and M. Gavish. Harmonic analysis of digital data bases. In *Wavelets and
+  Multiscale Analysis*, Applied and Numerical Harmonic Analysis, 161–197. Birkhäuser, 2011.
 - G. L. Litvinov. The Maslov dequantization, idempotent and tropical mathematics: a brief
   introduction. [arXiv:math/0507014](https://arxiv.org/abs/math/0507014)
 - L. Makowiec, M. Salvi and R. Sun. Random spanning trees in random environment.
