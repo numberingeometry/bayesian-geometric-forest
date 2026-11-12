@@ -321,6 +321,37 @@ def tree_law_checks():
     record("Brownian motion on a tree", "posterior over the 1,296 tree covariances G_T (flat prior, Gaussian steps) vs the tree law, n = 6",
            f"max abs error {err:.1e}; |det G_T - 1| at most {det_err:.1e}", err < EXACT_TOL and det_err < EXACT_TOL)
 
+    # Exact draws at any temperature (chain rule) against enumeration.
+    X = np.random.default_rng(71).uniform(size=(5, 2))
+    C = squared_distances(X)
+    trees = [tuple(sorted((min(i, j), max(i, j)) for i, j in t)) for t in all_labelled_trees(5)]
+    pvals, zmax, ok = [], 0.0, True
+    for kappa in (0.3, 3.0, 300.0):
+        lam = lam_from_scale(C, kappa)
+        law = TreeLaw(X, lam)
+        logw = np.array([-lam * sum(C[i, j] for i, j in t) for t in trees])
+        p = np.exp(logw - logsumexp(logw))
+        draws = law.sample(4000, random_state=int(kappa * 10), method="chain")
+        counts = {}
+        freq = np.zeros((5, 5))
+        for par in draws:
+            t = tuple(sorted((min(v, int(u)), max(v, int(u))) for v, u in enumerate(par) if u >= 0))
+            counts[t] = counts.get(t, 0) + 1
+            for v, u in enumerate(par):
+                if u >= 0:
+                    freq[v, u] += 1
+                    freq[u, v] += 1
+        ok &= set(counts) <= set(trees)
+        cells = [i for i, q in enumerate(p) if q * 4000 >= 5]
+        if len(cells) > 1:
+            obs = np.array([counts.get(trees[i], 0) for i in cells], float)
+            pvals.append(chisquare(obs, p[cells] * 4000 * obs.sum() / (p[cells] * 4000).sum()).pvalue)
+        P = law.edge_probability()
+        zmax = max(zmax, np.max(np.abs(freq / 4000 - P) / (np.sqrt(P * (1 - P) / 4000) + 1e-12)))
+    record("Exact draws at any temperature", "4,000 chain-rule draws (contract or delete) per kappa = 0.3, 3, 300 vs all 125 trees, n = 5",
+           f"chi-square p = {', '.join(f'{q:.3f}' for q in pvals)}; edge-frequency max |z| = {zmax:.2f}",
+           ok and min(pvals) > ALPHA and zmax < 4.5)
+
     # Haar wavelets of the clade hierarchy: W' G_T W vanishes off nested clades.
     worst, frac = 0.0, []
     for seed in range(5):
@@ -410,7 +441,7 @@ The tempered-tree rows check [the temperature dial](temperature.md): the log-spa
 against enumeration at every temperature, the point where a dense Laplacian inverse
 loses its digits on clustered data, the resistance-to-single-linkage sandwich on
 complete and sparse graphs, the soft-MST bound and gradient, the Brownian-motion
-reading of the law, the Haar banding of tree covariances, the overlap of two independent trees and the annealed partition
+reading of the law, exact tree draws at any temperature, the Haar banding of tree covariances, the overlap of two independent trees and the annealed partition
 function (a Monte Carlo test, at the same $\\alpha$).
 
 The last row illustrates Theorem 1 of Duan & Roy (2024): the leading eigenvectors of the

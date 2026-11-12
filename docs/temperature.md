@@ -253,7 +253,15 @@ $$
 the energy of the unit flow from $k$ to $j$ once $k$ is eliminated, which is at least
 $1/d_k$. This is a GTH-style (Grassmann–Taksar–Heyman) elimination applied to resistances.
 It costs $O(n^3)$, like one dense factorisation, and its relative accuracy is limited only
-by the rounding of the inputs $\lambda c_e$. The workbench runs the same algorithm in
+by the rounding of the inputs $\lambda c_e$.
+
+The same solver draws exact trees at any temperature. Wilson's random walks are exact
+too, but when cold they can be trapped between nearly isolated points for about
+$e^{\lambda\,\Delta c}$ steps. The chain rule (Kulkarni, 1990) avoids that: join the pair
+of contracted groups most likely to be joined, with its exact probability $w_{AB}R_{AB}$,
+or delete every edge between them, then recompute. `TreeLaw.sample(method="chain")` and
+the workbench's **Draw a tree** use it; a draw of 110 points takes well under a second
+in the browser. The workbench runs the same algorithm in
 JavaScript (`docs/dial/treelaw.js`), and a test checks it against the Python package.
 
 ## References
@@ -287,6 +295,8 @@ JavaScript (`docs/dial/treelaw.js`), and a test checks it against the Python pac
   [arXiv:2006.08063](https://arxiv.org/abs/2006.08063)
 - R. R. Coifman and M. Gavish. Harmonic analysis of digital data bases. In *Wavelets and
   Multiscale Analysis*, Applied and Numerical Harmonic Analysis, 161–197. Birkhäuser, 2011.
+- V. G. Kulkarni. Generating random combinatorial objects. *Journal of Algorithms*
+  11(2):185–207, 1990.
 - G. L. Litvinov. The Maslov dequantization, idempotent and tropical mathematics: a brief
   introduction. [arXiv:math/0507014](https://arxiv.org/abs/math/0507014)
 - L. Makowiec, M. Salvi and R. Sun. Random spanning trees in random environment.

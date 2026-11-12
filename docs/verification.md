@@ -29,6 +29,7 @@ python scripts/verify_exactness.py
 | Resistance to single linkage | log R_eff - lam u within [log(4/n^2), log(n-1)] for every pair; complete and k-NN graphs, n = 10, 60 | largest |lam^-1 log R - u| is 0.34 of the bound 2 log(n) / lam | PASS |
 | Soft MST | F = -log(Z)/lam vs enumeration and 0 <= S_MST - F <= (n-2) log(n)/lam (n = 6); grad F = 2 L_pi X vs central differences (n = 20) | F relative 5.6e-17; bound holds; gradient relative 2.7e-10 | PASS |
 | Brownian motion on a tree | posterior over the 1,296 tree covariances G_T (flat prior, Gaussian steps) vs the tree law, n = 6 | max abs error 7.6e-17; |det G_T - 1| at most 1.3e-15 | PASS |
+| Exact draws at any temperature | 4,000 chain-rule draws (contract or delete) per kappa = 0.3, 3, 300 vs all 125 trees, n = 5 | chi-square p = 0.005, 0.373; edge-frequency max |z| = 2.94 | PASS |
 | Haar banding | W' G_T W off nested clades, and W'W - I, for 5 random trees with n = 40 and random edge variances | max abs entry 6.7e-16; nested pairs 48% to 72% of the matrix | PASS |
 | Overlap of two trees | mean and variance of |T & T'| over all 125^2 pairs, n = 5 | mean error 8.9e-16; variance 0.651 <= bound 1.213 | PASS |
 | Annealed partition function | 20,000 uniform 5-point sets on the circle, lam = 20, vs n^(n-2) kappa^(n-1) | mean 3.0066 vs 3.0650, z = -1.07, p = 0.286 | PASS |
@@ -45,7 +46,7 @@ The tempered-tree rows check [the temperature dial](temperature.md): the log-spa
 against enumeration at every temperature, the point where a dense Laplacian inverse
 loses its digits on clustered data, the resistance-to-single-linkage sandwich on
 complete and sparse graphs, the soft-MST bound and gradient, the Brownian-motion
-reading of the law, the Haar banding of tree covariances, the overlap of two independent trees and the annealed partition
+reading of the law, exact tree draws at any temperature, the Haar banding of tree covariances, the overlap of two independent trees and the annealed partition
 function (a Monte Carlo test, at the same $\alpha$).
 
 The last row illustrates Theorem 1 of Duan & Roy (2024): the leading eigenvectors of the

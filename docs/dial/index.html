@@ -71,7 +71,7 @@ details p{margin:10px 0;max-width:62rem}
 <header class="intro"><div class="eyebrow">ONE DIAL · RANDOM TREE TO SINGLE LINKAGE</div><h1>Which tree grew this cloud?</h1><p>Turn the temperature. Every edge glows with its exact probability of being in the tree.</p></header>
 <main>
   <div class="toolbar">
-    <div><label class="sr-only" for="dataset" hidden>Dataset</label><select id="dataset" aria-label="Dataset"></select> <button id="grow" aria-label="Grow a new cloud by diffusion along a random tree">Grow</button> <button id="play">Play</button></div>
+    <div><label class="sr-only" for="dataset" hidden>Dataset</label><select id="dataset" aria-label="Dataset"></select> <button id="grow" aria-label="Grow a new cloud by diffusion along a random tree">Grow</button> <button id="play">Play</button> <button id="draw" aria-label="Draw one exact tree from the law at this temperature">Draw a tree</button></div>
     <div class="viewbar" role="group" aria-label="View"><button data-view="tree" aria-pressed="true">Tree</button><button data-view="ultra" aria-pressed="false">Ultrametric</button></div>
   </div>
   <section class="card" id="card" aria-label="Tree dial">
@@ -89,6 +89,7 @@ details p{margin:10px 0;max-width:62rem}
   <details>
     <summary>What am I looking at?</summary>
     <p><b>Grow</b> makes a new cloud: starting from the ringed root, each generation adds independent Gaussian steps along a uniformly random tree (gold). Then the true tree fades, and the dial starts at the temperature that grew the cloud.</p>
+    <p><b>Draw a tree</b> shows one exact sample from the law at the current temperature, over the faded edge probabilities. Each click is a new, independent draw: the spread between draws is the uncertainty the glow summarises.</p>
     <p>A tree law on the points: a spanning tree T has probability proportional to exp(−λ Σ ℓ²) over its edges. It is the posterior over trees if the cloud was grown by Gaussian diffusion along an unknown tree, with step variance σ² = 1/(2λ). Hot: every tree is nearly equally likely. Cold: only the minimum spanning tree survives, and cutting its longest edges is single linkage.</p>
     <p>Edge opacity is Pr(e ∈ T) = w<sub>e</sub>·R<sub>eff</sub>(e) (Kirchhoff), computed exactly in your browser by a log-space Kron elimination. The dial is κ = λ × the mean squared MST edge. The Ultrametric view compares λ⁻¹ log R<sub>eff</sub> with the single-linkage ultrametric; their gap is at most 2 log n / λ for every pair.</p>
     <p>Known mathematics, implemented and verified against brute-force enumeration. <a href="../temperature/">Statements, references and proofs</a></p>
@@ -120,7 +121,7 @@ function square(){var r=rng(11),P=[];for(var i=0;i<100;i++)P.push([r(),r()]);ret
 var DATA=[{name:'Grown by diffusion',make:grown},{name:'Clusters within clusters',make:nested},{name:'Cantor dust',make:dust},{name:'Filled square',make:square}];
 DATA.forEach(function(d,i){var o=document.createElement('option');o.value=i;o.textContent=d.name;$('dataset').appendChild(o);});
 
-var S={seed:7,anim:0,parent:null,depth:null,pts:[],scale:1,n:0,C:null,mstE:null,mstSet:null,U:null,umax:1,order:null,sbar:1,law:null,view:'tree',truth:null,kTrue:null,drag:-1,frame:0,playing:false};
+var S={sample:null,seed:7,anim:0,parent:null,depth:null,pts:[],scale:1,n:0,C:null,mstE:null,mstSet:null,U:null,umax:1,order:null,sbar:1,law:null,view:'tree',truth:null,kTrue:null,drag:-1,frame:0,playing:false};
 
 function normalise(P){var mn=[1e9,1e9],mx=[-1e9,-1e9];P.forEach(function(p){for(var t=0;t<2;t++){mn[t]=Math.min(mn[t],p[t]);mx[t]=Math.max(mx[t],p[t]);}});
   var s=Math.max(mx[0]-mn[0],mx[1]-mn[1]);return {pts:P.map(function(p){return [(p[0]-mn[0])/s,(p[1]-mn[1])/s];}),scale:s};}
@@ -131,7 +132,7 @@ function order(C,n){var parent=[],list=[],i,E=[];for(i=0;i<n;i++){parent.push(i)
 function geometry(){var n=S.pts.length;S.n=n;S.C=T.sqDists(S.pts);S.mstE=T.mst(S.C,n);S.mstSet={};
   var s=0;S.mstE.forEach(function(e){S.mstSet[e[0]*n+e[1]]=1;s+=S.C[e[0]*n+e[1]];});S.sbar=s/(n-1);
   S.U=T.minimax(S.C,n,S.mstE);S.umax=0;for(var i=0;i<n*n;i++)if(S.U[i]>S.umax)S.umax=S.U[i];S.order=order(S.C,n);}
-function load(i,animate){stopAnim();var d=DATA[i].make(),nm=normalise(d.pts);S.pts=nm.pts;S.truth=d.truth||null;S.parent=d.parent||null;S.depth=d.depth||null;geometry();
+function load(i,animate){stopAnim();S.sample=null;var d=DATA[i].make(),nm=normalise(d.pts);S.pts=nm.pts;S.truth=d.truth||null;S.parent=d.parent||null;S.depth=d.depth||null;geometry();
   S.bb=[0,0,0,0];S.bb[2]=Math.max.apply(null,S.pts.map(function(p){return p[0];}));S.bb[3]=Math.max.apply(null,S.pts.map(function(p){return p[1];}));size();
   S.kTrue=d.sigma?(nm.scale*nm.scale/(2*d.sigma*d.sigma))*S.sbar:null;
   $('tick').hidden=!S.kTrue;if(S.kTrue){var f=Math.min(1,Math.max(0,(Math.log10(S.kTrue)+1)/5));$('tickmark').style.left=(100*f)+'%';
@@ -153,8 +154,9 @@ function drawTree(){var r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.wid
   list.sort(function(a,b){return a[0]-b[0];});ctx.lineCap='round';
   if(S.truth&&$('dataset').value==='0'){ctx.setLineDash([3,4]);ctx.strokeStyle=css('--gold');ctx.globalAlpha=.55;ctx.lineWidth=1;
     S.truth.forEach(function(e){var a=xy(S.pts[e[0]]),b=xy(S.pts[e[1]]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});ctx.setLineDash([]);ctx.globalAlpha=1;}
-  list.forEach(function(e){var a=xy(S.pts[e[1]]),b=xy(S.pts[e[2]]);ctx.strokeStyle='rgba('+edge+','+Math.min(1,.08+.92*Math.pow(e[0],.8)).toFixed(3)+')';ctx.lineWidth=.6+2.2*e[0];
+  var fade=S.sample?.3:1;list.forEach(function(e){var a=xy(S.pts[e[1]]),b=xy(S.pts[e[2]]);ctx.strokeStyle='rgba('+edge+','+(fade*Math.min(1,.08+.92*Math.pow(e[0],.8))).toFixed(3)+')';ctx.lineWidth=.6+2.2*e[0];
     ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});
+  if(S.sample){ctx.strokeStyle=css('--ink');ctx.lineWidth=2.4;S.sample.forEach(function(e){var a=xy(S.pts[e[0]]),b=xy(S.pts[e[1]]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});}
   ctx.fillStyle=css('--dot');S.pts.forEach(function(p,k){var q=xy(p);ctx.beginPath();ctx.arc(q[0],q[1],k===S.drag?5:3,0,2*Math.PI);ctx.fill();});}
 
 function ramp(t){var st=[css('--h0'),css('--h1'),css('--h2'),css('--h3')].map(function(c){return [1,3,5].map(function(i){return parseInt(c.slice(i,i+2),16);});});
@@ -169,6 +171,9 @@ function readout(){var n=S.n,P=S.law.P,ov=0,tr=0;S.mstE.forEach(function(e){ov+=
   var h='<span class="pill">κ <b>'+fmt(kappa())+'</b></span><span class="pill">shared with the MST <b>'+Math.round(100*ov/(n-1))+'%</b></span>';
   if(S.truth&&$('dataset').value==='0'){S.truth.forEach(function(e){tr+=P[e[0]*n+e[1]];});h+='<span class="pill">shared with the tree that grew it <b>'+Math.round(100*tr/(n-1))+'%</b></span>';}
   if(S.view==='ultra'){h+='<span class="pill">largest gap <b>'+pct(gap()/S.umax)+'</b> of the top merge</span><span class="pill">guaranteed ≤ <b>'+pct(2*Math.log(n)/S.lam/S.umax)+'</b></span>';}
+  if(S.sample){var key=function(e){return Math.min(e[0],e[1])*n+Math.max(e[0],e[1]);},ms={},ts={},sm=0,st=0;S.mstE.forEach(function(e){ms[key(e)]=1;});if(S.truth)S.truth.forEach(function(e){ts[key(e)]=1;});
+    S.sample.forEach(function(e){if(ms[key(e)])sm++;if(ts[key(e)])st++;});
+    h+='<span class="pill">one exact draw · <b>'+Math.round(100*sm/(n-1))+'%</b> of its edges in the MST'+(S.truth&&$('dataset').value==='0'?' · <b>'+Math.round(100*st/(n-1))+'%</b> in the tree that grew it':'')+'</span>';}
   if(S.law.traceError>1e-8)h+='<span class="pill">numerical check failed</span>';$('readout').innerHTML=h;}
 function fmt(x){return x<10?x.toFixed(2):x<1000?x.toFixed(0):x.toExponential(1).replace('e+','e');}
 function pct(x){return x>=10?'>1000%':(100*x<1?(100*x).toFixed(2):(100*x).toFixed(1))+'%';}
@@ -176,7 +181,9 @@ function pct(x){return x>=10?'>1000%':(100*x<1?(100*x).toFixed(2):(100*x).toFixe
 function render(){S.frame=0;compute();if(S.view==='tree')drawTree();else drawUltra();readout();}
 function schedule(){if(!S.frame)S.frame=requestAnimationFrame(render);}
 
-$('temp').addEventListener('input',function(){stopAnim();schedule();});
+$('temp').addEventListener('input',function(){stopAnim();S.sample=null;schedule();});
+$('draw').addEventListener('click',function(){stopAnim();if(S.view!=='tree')document.querySelector('[data-view=tree]').click();var btn=$('draw');btn.disabled=true;btn.textContent='Drawing…';
+  setTimeout(function(){var n=S.n,lw=new Float64Array(n*n),lam=kappa()/S.sbar;for(var i=0;i<n*n;i++)lw[i]=-lam*S.C[i];S.sample=T.drawTree(lw,n,Math.random);btn.disabled=false;btn.textContent='Draw a tree';schedule();},30);});
 $('dataset').addEventListener('change',function(){load(+this.value);});
 $('grow').addEventListener('click',function(){S.seed=1+Math.floor(Math.random()*1e9);$('dataset').value='0';if(S.view!=='tree')document.querySelector('[data-view=tree]').click();load(0,true);});
 document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){stopAnim();S.view=b.dataset.view;
@@ -186,13 +193,13 @@ $('theme').addEventListener('click',function(){var d=document.documentElement,da
 
 function nearest(ev){var r=canvas.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top,best=-1,bd=196;
   S.pts.forEach(function(p,k){var q=xy(p),d=(q[0]-x)*(q[0]-x)+(q[1]-y)*(q[1]-y);if(d<bd){bd=d;best=k;}});return best;}
-canvas.addEventListener('pointerdown',function(ev){var k=nearest(ev);if(k<0)return;stopAnim();S.drag=k;canvas.setPointerCapture(ev.pointerId);});
+canvas.addEventListener('pointerdown',function(ev){var k=nearest(ev);if(k<0)return;stopAnim();S.sample=null;S.drag=k;canvas.setPointerCapture(ev.pointerId);});
 canvas.addEventListener('pointermove',function(ev){if(S.drag<0){canvas.style.cursor=nearest(ev)>=0?'grab':'default';return;}
   var r=canvas.getBoundingClientRect();S.pts[S.drag]=[Math.max(-.05,Math.min(1.05,(ev.clientX-r.left-box.x)/box.s)),Math.max(-.05,Math.min(1.05,1-(ev.clientY-r.top-box.y)/box.s))];
   var keep=S.kTrue&&S.sbar;geometry();if(keep)S.kTrue=null,$('tick').hidden=true;schedule();});
 canvas.addEventListener('pointerup',function(){S.drag=-1;schedule();});
 
-$('play').addEventListener('click',function(){stopAnim();if(S.playing){S.playing=false;$('play').textContent='Play';return;}
+$('play').addEventListener('click',function(){stopAnim();S.sample=null;if(S.playing){S.playing=false;$('play').textContent='Play';return;}
   S.playing=true;$('play').textContent='Pause';var v=+$('temp').value;if(v>=3.95)v=-1;var t0=null,v0=v;
   function step(ts){if(!S.playing)return;if(t0===null)t0=ts;v=v0+(ts-t0)/1600;if(v>=4){v=4;S.playing=false;$('play').textContent='Play';}
     $('temp').value=v;render();if(S.playing)requestAnimationFrame(step);}

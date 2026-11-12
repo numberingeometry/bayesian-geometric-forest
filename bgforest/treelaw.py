@@ -226,21 +226,75 @@ class TreeLaw:
         return float(self.edge_probability()[e[:, 0], e[:, 1]].sum() / max(self.n - 1, 1))
 
     # ------------------------------------------------------------------ sampling
-    def sample(self, n_trees: int = 1, random_state: RandomLike = None) -> np.ndarray:
-        """Exact independent trees by Wilson's algorithm, as an (n_trees, n) parent array.
+    def sample(self, n_trees: int = 1, random_state: RandomLike = None, method: str = "wilson") -> np.ndarray:
+        """Exact independent trees, as an (n_trees, n) parent array (-1 at the root).
 
-        ``parents[t, v]`` is the next node on v's path to a uniformly chosen root, -1 at
-        the root. Each draw is exact; walks slow down at low temperature, where they
-        must cross weak bridges.
+        ``method="wilson"`` runs Wilson's loop-erased random walks: fast when hot, but at
+        low temperature a walk can be trapped for about exp(lam * gap) steps between
+        nearly isolated points. ``method="chain"`` uses :func:`chain_rule_tree`, whose cost
+        does not depend on the temperature.
         """
         rng = _as_generator(random_state)
-        cum = _cumulative_from_log(self.log_weights)
         out = np.empty((int(n_trees), self.n), dtype=np.int64)
+        if method == "chain":
+            from bgforest.ultrametric import reroot
+
+            for t in range(int(n_trees)):
+                out[t] = reroot(chain_rule_tree(self.log_weights, rng), self.n, int(rng.integers(self.n)))
+            return out
+        if method != "wilson":
+            raise ValueError("method must be 'wilson' or 'chain'.")
+        cum = _cumulative_from_log(self.log_weights)
         for t in range(int(n_trees)):
             roots = np.zeros(self.n, dtype=bool)
             roots[int(rng.integers(self.n))] = True
             out[t] = wilson_trees(cum, roots, rng, 1)[0]
         return out
+
+
+def chain_rule_tree(log_w: np.ndarray, random_state: RandomLike = None) -> list:
+    """One exact draw from the weighted spanning-tree law, at any temperature.
+
+    The chain rule with exact marginals (in the manner of Kulkarni, 1990): keep groups of
+    contracted vertices and the log of the total weight between groups. Repeatedly take
+    the pair of groups most likely to be joined in the tree, with probability
+    w_AB R_eff(A, B) from the log-space Kron solver. With that probability join them,
+    choosing the original edge in proportion to its weight; otherwise delete every edge
+    between them. Each step conditions the law exactly. Costs at most about 2n solves.
+
+    Returns the n - 1 edges as (i, j) pairs.
+    """
+    rng = _as_generator(random_state)
+    log_w = np.asarray(log_w, dtype=np.float64)
+    n = log_w.shape[0]
+    alive = np.maximum(log_w, log_w.T)
+    np.fill_diagonal(alive, -np.inf)
+    L = alive.copy()
+    groups = [[i] for i in range(n)]
+    edges = []
+    while len(groups) > 1:
+        _, log_R = kron_log_resistance(L)
+        with np.errstate(invalid="ignore"):
+            log_pi = L + log_R
+        np.fill_diagonal(log_pi, -np.inf)
+        a, b = np.unravel_index(int(np.argmax(log_pi)), log_pi.shape)
+        a, b = int(min(a, b)), int(max(a, b))
+        if rng.random() < np.exp(min(float(log_pi[a, b]), 0.0)):
+            sub = alive[np.ix_(groups[a], groups[b])]
+            p = np.exp(sub - logsumexp(sub)).ravel()
+            k = int(rng.choice(len(p), p=p / p.sum()))
+            edges.append((groups[a][k // len(groups[b])], groups[b][k % len(groups[b])]))
+            merged = np.logaddexp(L[a], L[b])
+            L[a], L[:, a] = merged, merged
+            L[a, a] = -np.inf
+            L = np.delete(np.delete(L, b, 0), b, 1)
+            groups[a] = groups[a] + groups[b]
+            del groups[b]
+        else:
+            L[a, b] = L[b, a] = -np.inf
+            alive[np.ix_(groups[a], groups[b])] = -np.inf
+            alive[np.ix_(groups[b], groups[a])] = -np.inf
+    return edges
 
 
 def edge_set(parent: np.ndarray) -> set:
@@ -265,6 +319,7 @@ def lam_from_scale(C: np.ndarray, kappa: float) -> float:
 
 __all__ = [
     "TreeLaw",
+    "chain_rule_tree",
     "edge_overlap",
     "edge_set",
     "kron_log_resistance",

@@ -127,6 +127,45 @@
     return { logTau: sol.logTau, logR: sol.logR, P: P, traceError: Math.abs(trace - (n - 1)) / (n - 1) };
   }
 
-  var api = { kronLogResistance: kronLogResistance, treeLaw: treeLaw, sqDists: sqDists, mst: mst, minimax: minimax, lae: lae };
+  /* One exact draw from the tree law at any temperature: a port of
+   * bgforest.treelaw.chain_rule_tree. Groups of contracted vertices are joined with their
+   * exact probability (choosing the original edge in proportion to its weight) or have
+   * every edge between them deleted. rand() returns uniforms in [0, 1).
+   * Returns the n - 1 edges as [i, j] pairs. */
+  function drawTree(lw0, n, rand) {
+    var k = n, groups = [], i, j, L = Float64Array.from(lw0), alive = Float64Array.from(lw0), edges = [];
+    for (i = 0; i < n; i++) { groups.push([i]); L[i * n + i] = -Infinity; alive[i * n + i] = -Infinity; }
+    while (k > 1) {
+      var sol = kronLogResistance(L, k), best = -Infinity, a = 0, b = 1;
+      for (i = 0; i < k; i++) for (j = i + 1; j < k; j++) {
+        var v = L[i * k + j] + sol.logR[i * k + j];
+        if (v > best) { best = v; a = i; b = j; }
+      }
+      var A = groups[a], B = groups[b], x, y;
+      if (rand() < Math.exp(Math.min(best, 0))) {
+        var m = -Infinity, w = [], s = 0, t = 0;
+        for (x = 0; x < A.length; x++) for (y = 0; y < B.length; y++) { var lv = alive[A[x] * n + B[y]]; w.push(lv); if (lv > m) m = lv; }
+        for (t = 0; t < w.length; t++) { w[t] = Math.exp(w[t] - m); s += w[t]; }
+        var u = rand() * s; t = 0;
+        while (t < w.length - 1 && (u -= w[t]) > 0) t++;
+        edges.push([A[Math.floor(t / B.length)], B[t % B.length]]);
+        var K = k - 1, M = new Float64Array(K * K), idx = [];
+        for (i = 0; i < k; i++) if (i !== b) idx.push(i);
+        for (var r = 0; r < K; r++) for (var c = 0; c < K; c++) {
+          var ii = idx[r], jj = idx[c], val = L[ii * k + jj];
+          if (ii === a && jj !== a) val = lae(val, L[b * k + jj]);
+          if (jj === a && ii !== a) val = lae(val, L[ii * k + b]);
+          M[r * K + c] = ii === jj ? -Infinity : val;
+        }
+        groups[a] = A.concat(B); groups.splice(b, 1); L = M; k = K;
+      } else {
+        L[a * k + b] = -Infinity; L[b * k + a] = -Infinity;
+        for (x = 0; x < A.length; x++) for (y = 0; y < B.length; y++) { alive[A[x] * n + B[y]] = -Infinity; alive[B[y] * n + A[x]] = -Infinity; }
+      }
+    }
+    return edges;
+  }
+
+  var api = { kronLogResistance: kronLogResistance, treeLaw: treeLaw, drawTree: drawTree, sqDists: sqDists, mst: mst, minimax: minimax, lae: lae };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.TreeLawJS = api;
 })(typeof self !== 'undefined' ? self : this);

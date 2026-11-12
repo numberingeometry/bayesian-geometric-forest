@@ -33,7 +33,7 @@ law = TreeLaw(X, lam=lam_from_scale(TreeLaw(X, 1.0).costs, kappa=10.0))
 | `free_energy()`, `free_energy_grad()` | soft MST length $-\lambda^{-1}\log Z$ and its gradient $2L_\pi X$ |
 | `mst()`, `mst_overlap()` | the $\lambda \to \infty$ limit and the expected fraction of tree edges it shares |
 | `trace_error()` | $\lvert\sum_e \pi_e - (n-1)\rvert/(n-1)$, a built-in accuracy gate |
-| `sample(n_trees, random_state)` | exact Wilson draws, as parent arrays |
+| `sample(n_trees, random_state, method)` | exact draws as parent arrays: `"wilson"` (fast when hot) or `"chain"` (any temperature) |
 
 `TreeLaw.from_costs(C, lam)` accepts any symmetric cost matrix, with `inf` for a missing
 edge. `bgforest.ultrametric` adds `single_linkage_ultrametric`,

@@ -103,3 +103,33 @@ def test_disconnected_graph_is_rejected():
     lw[0, 1] = lw[1, 0] = 0.0
     with pytest.raises(ValueError):
         kron_log_resistance(lw)
+
+
+def test_chain_rule_draws_match_enumeration_when_hot_and_cold():
+    from scipy.stats import chisquare
+
+    X = np.random.default_rng(11).uniform(size=(5, 2))
+    for kappa in (0.3, 3.0, 300.0):
+        law = TreeLaw(X, lam_from_scale(TreeLaw(X, 1.0).costs, kappa))
+        _, P, trees, logw = enumerate_law(law.costs, law.lam)
+        p = np.exp(logw - logsumexp(logw))
+        keys = [tuple(sorted((min(i, j), max(i, j)) for i, j in t)) for t in trees]
+        draws = law.sample(3000, random_state=4, method="chain")
+        counts = {}
+        for par in draws:
+            k = tuple(sorted((min(v, int(u)), max(v, int(u))) for v, u in enumerate(par) if u >= 0))
+            counts[k] = counts.get(k, 0) + 1
+        assert set(counts) <= set(keys)
+        cells = [i for i, q in enumerate(p) if q * 3000 >= 5]
+        if len(cells) > 1:
+            obs = np.array([counts.get(keys[i], 0) for i in cells], float)
+            exp = p[cells] * 3000
+            assert chisquare(obs, exp * obs.sum() / exp.sum()).pvalue > 1e-3
+        freq = np.zeros((5, 5))
+        for par in draws:
+            for v, u in enumerate(par):
+                if u >= 0:
+                    freq[v, u] += 1
+                    freq[u, v] += 1
+        se = np.sqrt(P * (1 - P) / 3000) + 1e-12
+        assert np.max(np.abs(freq / 3000 - P) / se) < 4.5
